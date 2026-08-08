@@ -81,14 +81,9 @@
   .libtabs{display:flex;gap:6px;margin-bottom:16px}
   .libtab{flex:1;text-align:center;font-size:12.5px;padding:8px 0;border-radius:20px;border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer}
   .libtab.on{background:var(--pink);color:#fff;border-color:var(--pink)}
-  .libfeatured{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
-  .libfeatured .libcover{height:170px;background:linear-gradient(135deg,#534AB7,#D4537E);background-size:cover;background-position:center}
-  .libfeatured .libbody{padding:14px}
-  .libfeatured .libname{font-size:18px;font-weight:700;margin-bottom:6px}
-  .libfeatured .libdesc{font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.4}
   .libgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .libcard{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05);cursor:pointer}
-  .libcard .libcover{height:110px;background:linear-gradient(135deg,#534AB7,#D4537E);background-size:cover;background-position:center;position:relative}
+  .libcard .libcover{aspect-ratio:9/16;background:linear-gradient(135deg,#534AB7,#D4537E);background-size:cover;background-position:center;position:relative}
   .libcard .libbadge{position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.45);color:#fff;font-size:9.5px;padding:2px 7px;border-radius:8px;font-weight:600}
   .libcard .libbody{padding:10px 11px}
   .libcard .libname{font-size:13.5px;font-weight:600;margin-bottom:3px}
@@ -116,10 +111,10 @@
   <div class="pct" id="splashPct">0%</div>
   <div class="hint" id="splashHint">загружаем историю…</div>
 </div>
-<div class="proto-flag">ПРОТОТИП · данные сохраняются в этом браузере</div>
+<div class="proto-flag" id="protoflag" hidden>ПРОТОТИП · данные сохраняются в этом браузере</div>
 <div class="wrap">
-  <header><h1 id="apptitle">Мои истории</h1></header>
-  <div class="tabs">
+  <header id="apphead" hidden><h1 id="apptitle">Мои истории</h1></header>
+  <div class="tabs" id="apptabs" hidden>
     <div class="tab on" data-t="story">История</div>
     <div class="tab" data-t="roster">Герои</div>
     <div class="tab" data-t="blitz">Блиц</div>
@@ -222,6 +217,10 @@ initChats();
 /* ---------- каркас ---------- */
 const screen=document.getElementById('screen');
 let tab='story';
+/* режим редактора: вкладки и админка появляются только при #admin в адресе */
+if(location.hash==='#admin'){
+  ['protoflag','apphead','apptabs'].forEach(id=>{const el=document.getElementById(id);if(el)el.hidden=false});
+}
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>setTab(t.dataset.t));
 function setTab(n){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.t===n));tab=n;openChat=null;render()}
 window.switchTab=setTab;
@@ -248,27 +247,24 @@ window.libPlay=id=>{
  if(!ep||!ep.scenes.length){alert('В этой истории пока нет доступных серий.');return}
  DB.active={st:id,se:se.id,ep:ep.id};node=null;libraryOpen=false;save();render();
 };
-function libCard(s,big){
+function libCard(s){
  const cover=s.cover?`style="background-image:url(${s.cover})"`:'';
  const ready=s.seasons.some(se=>se.episodes.some(e=>e.scenes.length));
- return `<div class="${big?'libfeatured':'libcard'}" onclick="libPlay(${s.id})">
-   <div class="libcover" ${cover}>${big?'':`<span class="libbadge">${ready?'Играть':'Скоро'}</span>`}</div>
+ return `<div class="libcard" onclick="libPlay(${s.id})">
+   <div class="libcover" ${cover}><span class="libbadge">${ready?'Играть':'Скоро'}</span></div>
    <div class="libbody"><div class="libname">${esc(s.title)}</div>
-    <div class="libdesc">${esc(s.desc||'Описание скоро появится…')}</div>
-    ${big?`<button class="btn sm">${ready?'Играть':'Скоро'}</button>`:''}</div></div>`;
+    <div class="libdesc">${esc(s.desc||'Описание скоро появится…')}</div></div></div>`;
 }
 function renderLibrary(){
  screen.style.cssText='background:#1a0505 url(static/bg/library-bg.png) center/cover no-repeat;margin:0 -16px -24px;padding:16px 16px 30px;border-radius:0 0 18px 18px';
  const list=DB.stories||[];
- const featured=list[0];
  let h=`<div class="libtabs">
    <div class="libtab ${libTab==='new'?'on':''}" onclick="libSet('new')">Новые</div>
-   <div class="libtab ${libTab==='foryou'?'on':''}" onclick="libSet('foryou')">Для вас</div>
+   <div class="libtab ${libTab==='foryou'?'on':''}" onclick="libSet('foryou')">Играю сейчас</div>
    <div class="libtab ${libTab==='top'?'on':''}" onclick="libSet('top')">Популярное</div>
  </div>`;
- if(!list.length){h+='<div class="libempty">Историй пока нет.<br>Собери первую во вкладке «Админка».</div>';screen.innerHTML=h;return}
- if(featured)h+=libCard(featured,true);
- h+=`<div class="libgrid">${list.map(s=>libCard(s,false)).join('')}</div>`;
+ if(!list.length){h+='<div class="libempty">Историй пока нет.</div>';screen.innerHTML=h;return}
+ h+=`<div class="libgrid">${list.map(s=>libCard(s)).join('')}</div>`;
  screen.innerHTML=h;screen.scrollTop=0;
 }
 
