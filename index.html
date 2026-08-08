@@ -83,7 +83,7 @@
   .libtab{flex:1;text-align:center;font-size:12.5px;padding:8px 0;border-radius:20px;
     border:1px solid rgba(255,255,255,.10);background:rgba(28,22,24,.78);color:#9d8f92;cursor:pointer;backdrop-filter:blur(4px)}
   .libtab.on{background:#7d1524;color:#fff;border-color:#a02030}
-  .libgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .libgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   .libcard{background:#1c1618;border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.45);cursor:pointer}
   .libcard .libcover{aspect-ratio:9/16;background:linear-gradient(135deg,#534AB7,#D4537E);background-size:cover;background-position:center;position:relative}
   .libcard .libbadge{position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.45);color:#fff;font-size:9.5px;padding:2px 7px;border-radius:8px;font-weight:600}
@@ -93,10 +93,37 @@
   .libempty{text-align:center;color:#93858a;font-size:13px;padding:40px 10px}
   .libback{font-size:12.5px;color:var(--pink-deep);cursor:pointer;margin-bottom:10px;display:inline-flex;align-items:center;gap:4px;font-weight:600}
 
-  .stage{position:relative;border-radius:16px;overflow:hidden;min-height:280px;margin-bottom:14px;
-    background-size:cover;background-position:center;background:linear-gradient(135deg,#534AB7,#D4537E)}
-  .stage .stagenote{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.35);color:#fff;font-size:11px;padding:5px 9px;border-radius:8px}
-  .stage .charport{position:absolute;bottom:0;left:50%;transform:translateX(-50%);height:100%;max-width:78%;object-fit:contain;object-position:bottom}
+  /* ---- сцена истории: текст поверх картинки, как в референсе ---- */
+  .vn{position:fixed;inset:0;z-index:500;overflow:hidden;
+    background:#120a14 center/cover no-repeat;background-image:linear-gradient(160deg,#2a1030,#120a14)}
+  .vn.hasbg{background-image:none}
+  .vnbg{position:absolute;inset:0;background-size:cover;background-position:center}
+  .vnchar{position:absolute;bottom:0;left:50%;transform:translateX(-50%);height:100%;
+    object-fit:contain;object-position:bottom;pointer-events:none}
+  .vnback{position:absolute;top:12px;left:12px;z-index:6;width:34px;height:34px;border-radius:50%;
+    background:rgba(0,0,0,.45);color:#fff;font-size:20px;line-height:34px;text-align:center;cursor:pointer;backdrop-filter:blur(3px)}
+  .vnnote{position:absolute;top:14px;left:56px;z-index:6;background:rgba(0,0,0,.45);color:#e7d3d8;
+    font-size:11px;padding:6px 10px;border-radius:8px;font-style:italic}
+  .vnui{position:absolute;left:0;right:0;bottom:0;z-index:5;padding:0 12px 20px;display:flex;flex-direction:column;gap:9px}
+  .vntab{align-self:flex-start;margin-left:16px;margin-bottom:-7px;position:relative;z-index:2;
+    padding:2px;background:linear-gradient(120deg,#ff2f8e,#ffc74d);
+    clip-path:polygon(9px 0,100% 0,calc(100% - 9px) 100%,0 100%);filter:drop-shadow(0 0 5px rgba(255,47,142,.65))}
+  .vntab span{display:block;padding:5px 20px 6px;background:#7a1652;color:#fff;font-size:13.5px;font-weight:600;
+    clip-path:polygon(9px 0,100% 0,calc(100% - 9px) 100%,0 100%)}
+  .vnbox{padding:2px;background:linear-gradient(135deg,#ff2f8e 0%,#ff5ea8 45%,#ffc74d 100%);
+    clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px);
+    filter:drop-shadow(0 0 7px rgba(255,47,142,.55))}
+  .vnbox .in{padding:14px 16px 16px;background:rgba(86,16,74,.86);backdrop-filter:blur(2px);
+    clip-path:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px)}
+  .vntext{color:#fff;font-size:16px;line-height:1.5}
+  .vnend{color:#ffd9a8;font-size:12.5px;font-style:italic;margin-top:10px}
+  .vnchoice{padding:2px;background:linear-gradient(120deg,#ff2f8e,#ffc74d);cursor:pointer;
+    clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px);
+    filter:drop-shadow(0 0 5px rgba(255,47,142,.5))}
+  .vnchoice span{display:block;padding:13px 18px;background:rgba(140,26,124,.92);color:#fff;font-size:15px;
+    clip-path:polygon(11px 0,100% 0,100% calc(100% - 11px),calc(100% - 11px) 100%,0 100%,0 11px)}
+  .vnchoice:active span{background:rgba(170,36,150,.95)}
+  .vnchoice.dia span{background:rgba(150,90,20,.92)}
 
   #splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
     background:#0a0505 url(static/bg/app-splash.png) center/cover no-repeat;color:#fff;transition:opacity .5s ease;padding:24px;padding-bottom:11%;text-align:center}
@@ -258,7 +285,7 @@ function libCard(s){
     <div class="libdesc">${esc(s.desc||'Описание скоро появится…')}</div></div></div>`;
 }
 function renderLibrary(){
- screen.style.cssText='background:#1a0505 url(static/bg/library-bg.png) center/cover no-repeat;margin:0 -16px -24px;padding:16px 16px 30px;border-radius:0 0 18px 18px';
+ screen.style.cssText='background:#1a0505 url(static/bg/library-bg.png) center/cover no-repeat;margin:0 -16px -24px;padding:16px 22px 34px;border-radius:0 0 18px 18px';
  const list=DB.stories||[];
  let h=`<div class="libtabs">
    <div class="libtab ${libTab==='new'?'on':''}" onclick="libSet('new')">Новые</div>
@@ -279,28 +306,33 @@ function renderStory(){
  if(!node)node=ep.start||ep.scenes[0].id;
  const n=ep.scenes.find(s=>s.id===node)||ep.scenes[0];
  DB.chars.forEach(c=>{if(n.speaker===c.name)met[c.id]=true});
- let h='<div class="libback" onclick="libOpen()">‹ Библиотека</div>';
  const st=getStory(DB.active.st);
  const loc=(n.loc&&st&&st.locations)?st.locations.find(l=>l.id===n.loc):null;
  const bgUrl=(loc&&loc.bg)?loc.bg:n.bg;
- const bg=bgUrl?`style="background-image:url(${bgUrl})"`:'';
  const castMember=(n.speaker&&st&&st.cast)?st.cast.find(c=>c.name===n.speaker):null;
- if(n.illo||bgUrl||loc||castMember){
-   h+=`<div class="stage" ${bg}>`;
-   if(!bgUrl)h+=`<span class="stagenote">арт: ${esc(n.illo||(loc?loc.name:''))}</span>`;
-   if(castMember&&castMember.img)h+=`<img class="charport" src="${castMember.img}">`;
-   h+=`</div>`;
- }
- if(n.speaker)h+=`<div class="speaker">${esc(n.speaker)}</div>`;
- h+=`<div class="stext">${esc(n.text)}</div>`;
- if(n.endnote)h+=`<div class="storyend">${esc(n.endnote)}</div>`;
+
+ let h=`<div class="vn${bgUrl?' hasbg':''}">`;
+ if(bgUrl)h+=`<div class="vnbg" style="background-image:url(${bgUrl})"></div>`;
+ h+=`<div class="vnback" onclick="libOpen()">‹</div>`;
+ if(!bgUrl&&n.illo)h+=`<div class="vnnote">арт: ${esc(n.illo)}</div>`;
+ if(castMember&&castMember.img)h+=`<img class="vnchar" src="${castMember.img}">`;
+
+ h+=`<div class="vnui">`;
+ h+=`<div class="vntab"><span>${n.speaker?esc(n.speaker):'…'}</span></div>`;
+ h+=`<div class="vnbox"><div class="in"><div class="vntext">${esc(n.text)}</div>`;
+ if(n.endnote)h+=`<div class="vnend">${esc(n.endnote)}</div>`;
+ h+=`</div></div>`;
+
  (n.choices||[]).forEach(c=>{
-  if(c.go==='__chat')h+=`<button class="cta" onclick="switchTab('roster')">${esc(c.t)} · чат</button>`;
-  else if(c.go==='__restart')h+=`<button class="btn ghost" onclick="restart()">${esc(c.t)}</button>`;
-  else if(c.type==='dia')h+=`<div class="choice dia" onclick="goNode('${c.go}')">💎 ${c.cost||0} · ${esc(c.t)}</div>`;
-  else h+=`<div class="choice" onclick="goNode('${c.go}')">${esc(c.t)}</div>`;
+  const act = c.go==='__chat' ? `switchTab('roster')`
+            : c.go==='__restart' ? `restart()`
+            : `goNode('${c.go}')`;
+  const dia = c.type==='dia';
+  h+=`<div class="vnchoice${dia?' dia':''}" onclick="${act}"><span>${dia?`💎 ${c.cost||0} · `:''}${esc(c.t)}</span></div>`;
  });
- if(!n.choices||!n.choices.length)h+=`<button class="btn ghost" onclick="restart()">Пройти заново</button>`;
+ if(!n.choices||!n.choices.length)
+   h+=`<div class="vnchoice" onclick="restart()"><span>Пройти заново</span></div>`;
+ h+=`</div></div>`;
  screen.innerHTML=h;screen.scrollTop=0;
 }
 window.goNode=id=>{node=id;render()};
