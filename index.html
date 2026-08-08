@@ -102,7 +102,7 @@
   .stage .charport{position:absolute;bottom:0;left:50%;transform:translateX(-50%);height:100%;max-width:78%;object-fit:contain;object-position:bottom}
 
   #splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
-    background:#0a0505 url(/static/bg/app-splash.png) center/cover no-repeat;color:#fff;transition:opacity .5s ease;padding:24px;padding-bottom:11%;text-align:center}
+    background:#0a0505 url(static/bg/app-splash.png) center/cover no-repeat;color:#fff;transition:opacity .5s ease;padding:24px;padding-bottom:11%;text-align:center}
   #splash.hide{opacity:0;pointer-events:none}
   #splash .bar{width:220px;height:8px;border-radius:6px;background:rgba(255,255,255,.18);overflow:hidden;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,.5)}
   #splash .bar i{display:block;height:100%;width:0%;border-radius:6px;background:linear-gradient(90deg,#7a0d0d,#e2263f);transition:width .12s linear}
@@ -142,7 +142,7 @@ const REPLY={
 function seed(){
  const chars=[];
  const S=(id,text,choices,x={})=>Object.assign({id,text,choices,bg:null},x);
- const L='/static/bg/', I='/static/img/';
+ const L='static/bg/', I='static/img/';
  const ep={id:"e1",title:"Серия 1",start:"s01",scenes:[
   S("s01","«РАЗЛУЧНИКИ» появляется на экране.",[{t:"Далее",go:"s02",type:"free"}],{illo:"анимация: надпись РАЗЛУЧНИКИ"}),
   S("s02","Нетипичное шоу проверки чувств. Уверены, что ваш партнёр — тот, с кем вы готовы провести всю жизнь?",[{t:"Далее",go:"s03",type:"free"}]),
@@ -210,9 +210,9 @@ function seed(){
   seasons:[{id:"se1",title:"Сезон 1",episodes:[ep]}]};
  return {chars,stories:[story],active:{st:1,se:"se1",ep:"e1"},nc:1,ns:2,nse:2,nep:2,nsc:31,nloc:8,ncast:7};
 }
-let DB;try{DB=JSON.parse(localStorage.getItem('proto_nv4'))}catch(e){DB=null}
+let DB;try{DB=JSON.parse(localStorage.getItem('proto_nv5'))}catch(e){DB=null}
 if(!DB||!DB.stories)DB=seed();
-function save(){try{localStorage.setItem('proto_nv4',JSON.stringify(DB))}catch(e){alert('Не хватило места в браузере (много картинок). Используй фото полегче.')}}
+function save(){try{localStorage.setItem('proto_nv5',JSON.stringify(DB))}catch(e){alert('Не хватило места в браузере (много картинок). Используй фото полегче.')}}
 window.resetAll=()=>{if(confirm('Сбросить всё к демо?')){DB=seed();save();initChats();render()}};
 
 let chats={},openChat=null,met={};
@@ -258,7 +258,7 @@ function libCard(s,big){
     ${big?`<button class="btn sm">${ready?'Играть':'Скоро'}</button>`:''}</div></div>`;
 }
 function renderLibrary(){
- screen.style.cssText='background:#1a0505 url(/static/bg/library-bg.png) center/cover no-repeat;margin:0 -16px -24px;padding:16px 16px 30px;border-radius:0 0 18px 18px';
+ screen.style.cssText='background:#1a0505 url(static/bg/library-bg.png) center/cover no-repeat;margin:0 -16px -24px;padding:16px 16px 30px;border-radius:0 0 18px 18px';
  const list=DB.stories||[];
  const featured=list[0];
  let h=`<div class="libtabs">

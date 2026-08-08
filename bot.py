@@ -2,7 +2,7 @@ import os
 import time
 import urllib.request
 from dotenv import load_dotenv
-from flask import Flask, render_template, make_response
+from flask import Flask, send_file, make_response
 from telegram import (
     Update,
     ReplyKeyboardMarkup,
@@ -26,7 +26,8 @@ def index():
 
 @flask_app.route("/app")
 def mini_app():
-    resp = make_response(render_template("app.html"))
+    # тот же самый index.html, что отдаёт GitHub Pages — одна копия, не расходится
+    resp = make_response(send_file("index.html"))
     # без кеша — Telegram WebView иначе может показывать старую версию после обновлений
     resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     resp.headers["Pragma"] = "no-cache"
