@@ -234,14 +234,30 @@ function seed(){
   seasons:[{id:"se1",title:"Сезон 1",episodes:[ep]}]};
  return {chars,stories:[story],active:{st:1,se:"se1",ep:"e1"},nc:1,ns:2,nse:2,nep:2,nsc:31,nloc:8,ncast:7};
 }
-let DB;try{DB=JSON.parse(localStorage.getItem('proto_nv5'))}catch(e){DB=null}
-if(!DB||!DB.stories)DB=seed();
-function save(){try{localStorage.setItem('proto_nv5',JSON.stringify(DB))}catch(e){alert('Не хватило места в браузере (много картинок). Используй фото полегче.')}}
+/* ---------- хранилище: IndexedDB вместо localStorage ----------
+   localStorage ограничен ~5-10 МБ на весь браузер и переполняется от картинок.
+   IndexedDB даёт сотни МБ и умеет то же самое (просто асинхронно). */
+const IDB_DB='greh_odn', IDB_STORE='kv', IDB_KEY='db';
+function idbOpen(){return new Promise((res,rej)=>{
+  const r=indexedDB.open(IDB_DB,1);
+  r.onupgradeneeded=()=>r.result.createObjectStore(IDB_STORE);
+  r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
+})}
+async function idbGet(k){const db=await idbOpen();return new Promise((res,rej)=>{
+  const rq=db.transaction(IDB_STORE,'readonly').objectStore(IDB_STORE).get(k);
+  rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error);
+})}
+async function idbSet(k,val){const db=await idbOpen();return new Promise((res,rej)=>{
+  const tx=db.transaction(IDB_STORE,'readwrite'); tx.objectStore(IDB_STORE).put(val,k);
+  tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);
+})}
+
+let DB=seed(); // временная заглушка, пока грузится настоящая база из IndexedDB
+function save(){idbSet(IDB_KEY,DB).catch(e=>{console.error(e);alert('Не удалось сохранить: '+(e&&e.message||e))})}
 window.resetAll=()=>{if(confirm('Сбросить всё к демо?')){DB=seed();save();initChats();render()}};
 
 let chats={},openChat=null,met={};
 function initChats(){chats={};DB.chars.forEach(c=>chats[c.id]=[{who:'in',text:c.first}])}
-initChats();
 
 /* ---------- каркас ---------- */
 const screen=document.getElementById('screen');
@@ -383,6 +399,7 @@ let aTab='stories', nav={st:null,se:null,ep:null,sc:null}, cform=null, showNew=f
 const epCount=s=>s.seasons.reduce((a,se)=>a+se.episodes.length,0);
 window.toggleNew=()=>{showNew=!showNew;renderAdmin()};
 function renderAdmin(){
+ if(quickPanel){screen.innerHTML=admQuickPanel();return}
  screen.innerHTML=`<div class="two" style="margin-bottom:14px">
    <button class="btn sm ${aTab==='stories'?'':'ghost'}" onclick="aSet('stories')">Истории</button>
    <button class="btn sm ${aTab==='chars'?'':'ghost'}" onclick="aSet('chars')">Герои</button></div>`+
@@ -431,6 +448,42 @@ window.goStory=id=>{nav={st:id,se:null,ep:null,sc:null};renderAdmin()};
 window.rmStory=id=>{if(confirm('Удалить историю?')){DB.stories=DB.stories.filter(s=>s.id!==id);save();renderAdmin()}};
 
 /* --- уровень 1: история → ГГ + сезоны --- */
+function locsBlock(s){
+ return `<div style="font-size:13px;color:var(--muted);margin:20px 0 10px">Локации (${s.locations.length}) — фоны, которые переиспользуешь в сценах</div>
+  ${s.locations.map(l=>`<div class="row">${l.bg?`<img src="${l.bg}" style="width:46px;height:46px;object-fit:cover;border-radius:8px">`:'<div style="width:46px;height:46px;border-radius:8px;background:var(--purple-soft)"></div>'}
+    <div class="rt"><div>${esc(l.name)}</div><div class="m">${l.bg?'фон загружен':'нет фона'}</div></div>
+    <label class="btn sm ghost" style="cursor:pointer">Фон<input type="file" accept="image/*" style="display:none" onchange="upLoc(this,'${l.id}')"></label>
+    <span class="del" onclick="rmLoc('${l.id}')">✕</span></div>`).join('')}
+  <div class="field" style="margin-top:8px"><input id="ns_loc" placeholder="Название локации (Бар ночью)"></div>
+  <div class="field"><label>Фото локации (можно сразу, можно потом)</label><input type="file" id="ns_locfile" accept="image/*"></div>
+  <button class="btn ghost" onclick="addLoc()">+ Добавить локацию</button>`;
+}
+function castBlock(s){
+ return `<div style="font-size:13px;color:var(--muted);margin:20px 0 10px">Действующие лица (${s.cast.length}) — портреты на прозрачном фоне, показываются поверх фона сцены, когда имя в поле «Кто говорит» совпадает с именем здесь</div>
+  ${s.cast.map(c=>`<div class="row">${c.img?`<img src="${c.img}" style="width:46px;height:46px;object-fit:cover;border-radius:8px">`:'<div style="width:46px;height:46px;border-radius:8px;background:var(--purple-soft)"></div>'}
+    <div class="rt"><div>${esc(c.name)}</div><div class="m">${c.img?'портрет загружен':'нет портрета'}</div></div>
+    <label class="btn sm ghost" style="cursor:pointer">Портрет<input type="file" accept="image/*" style="display:none" onchange="upCast(this,'${c.id}')"></label>
+    <span class="del" onclick="rmCast('${c.id}')">✕</span></div>`).join('')}
+  <div class="field" style="margin-top:8px"><input id="ns_cast" placeholder="Имя персонажа (Итан) — как в поле «Кто говорит»"></div>
+  <div class="field"><label>Портрет (можно сразу, можно потом)</label><input type="file" id="ns_castfile" accept="image/*"></div>
+  <button class="btn ghost" onclick="addCast()">+ Добавить персонажа</button>`;
+}
+let quickPanel=null;
+window.quickOpen=view=>{if(nav.sc){try{pullScene()}catch(e){}}quickPanel=view;renderAdmin()};
+window.quickClose=()=>{quickPanel=null;renderAdmin()};
+function quickBar(){
+ return `<div class="rowbtns" style="margin-bottom:14px">
+   <button class="btn sm ghost" onclick="quickOpen('loc')">📍 Локации</button>
+   <button class="btn sm ghost" onclick="quickOpen('cast')">🎭 Герои</button></div>`;
+}
+function admQuickPanel(){
+ const s=nStory();
+ if(!s.locations)s.locations=[];
+ if(!s.cast)s.cast=[];
+ return `<div class="crumb"><b>${esc(s.title)}</b> · ${quickPanel==='loc'?'Локации':'Действующие лица'}</div>
+  <button class="btn sm ghost" onclick="quickClose()">‹ Назад, где была</button>
+  ${quickPanel==='loc'?locsBlock(s):castBlock(s)}`;
+}
 function admOneStory(){
  if(nav.se)return admOneSeason();
  const s=nStory();
@@ -446,20 +499,8 @@ function admOneStory(){
   <div class="field"><label>Имя ГГ</label><input id="e_gg" value="${esc(s.gg.name)}"></div>
   <div class="field"><label>Описание ГГ</label><textarea id="e_ggd">${esc(s.gg.desc)}</textarea></div>
   <button class="btn sm" onclick="saveStoryMeta()">Сохранить</button>
-  <div style="font-size:13px;color:var(--muted);margin:20px 0 10px">Локации (${s.locations.length}) — фоны, которые переиспользуешь в сценах</div>
-  ${s.locations.map(l=>`<div class="row">${l.bg?`<img src="${l.bg}" style="width:46px;height:46px;object-fit:cover;border-radius:8px">`:'<div style="width:46px;height:46px;border-radius:8px;background:var(--purple-soft)"></div>'}
-    <div class="rt"><div>${esc(l.name)}</div><div class="m">${l.bg?'фон загружен':'нет фона'}</div></div>
-    <label class="btn sm ghost" style="cursor:pointer">Фон<input type="file" accept="image/*" style="display:none" onchange="upLoc(this,'${l.id}')"></label>
-    <span class="del" onclick="rmLoc('${l.id}')">✕</span></div>`).join('')}
-  <div class="field" style="margin-top:8px"><input id="ns_loc" placeholder="Название локации (Бар ночью)"></div>
-  <button class="btn ghost" onclick="addLoc()">+ Добавить локацию</button>
-  <div style="font-size:13px;color:var(--muted);margin:20px 0 10px">Действующие лица (${s.cast.length}) — портреты на прозрачном фоне, показываются поверх фона сцены, когда имя в поле «Кто говорит» совпадает с именем здесь</div>
-  ${s.cast.map(c=>`<div class="row">${c.img?`<img src="${c.img}" style="width:46px;height:46px;object-fit:cover;border-radius:8px">`:'<div style="width:46px;height:46px;border-radius:8px;background:var(--purple-soft)"></div>'}
-    <div class="rt"><div>${esc(c.name)}</div><div class="m">${c.img?'портрет загружен':'нет портрета'}</div></div>
-    <label class="btn sm ghost" style="cursor:pointer">Портрет<input type="file" accept="image/*" style="display:none" onchange="upCast(this,'${c.id}')"></label>
-    <span class="del" onclick="rmCast('${c.id}')">✕</span></div>`).join('')}
-  <div class="field" style="margin-top:8px"><input id="ns_cast" placeholder="Имя персонажа (Итан) — как в поле «Кто говорит»"></div>
-  <button class="btn ghost" onclick="addCast()">+ Добавить персонажа</button>
+  ${locsBlock(s)}
+  ${castBlock(s)}
   <div style="font-size:13px;color:var(--muted);margin:20px 0 10px">Сезоны (${s.seasons.length})</div>
   ${s.seasons.map(se=>`<div class="row"><div class="rt"><div>${esc(se.title)}</div><div class="m">${se.episodes.length} серий</div></div>
     <button class="btn sm ghost" onclick="goSeason('${se.id}')">Открыть</button>
@@ -470,10 +511,27 @@ function admOneStory(){
 window.goStories=()=>{nav.st=null;renderAdmin()};
 window.saveStoryMeta=()=>{const s=nStory();s.title=v('e_t')||s.title;s.genre=v('e_g');s.desc=v('e_d');s.gg.name=v('e_gg')||'ГГ';s.gg.desc=v('e_ggd');save();renderAdmin()};
 window.upCover=inp=>readImg(inp,d=>{nStory().cover=d;save();renderAdmin()});
-window.addLoc=()=>{const s=nStory();if(!s.locations)s.locations=[];DB.nloc=(DB.nloc||10)+1;s.locations.push({id:'l'+DB.nloc,name:v('ns_loc')||('Локация '+(s.locations.length+1)),bg:null});save();renderAdmin()};
+window.addLoc=()=>{
+ const s=nStory();if(!s.locations)s.locations=[];
+ DB.nloc=(DB.nloc||10)+1;
+ const loc={id:'l'+DB.nloc,name:v('ns_loc')||('Локация '+(s.locations.length+1)),bg:null};
+ s.locations.push(loc);
+ const inp=document.getElementById('ns_locfile');
+ if(inp&&inp.files[0])readImg(inp,d=>{loc.bg=d;save();renderAdmin()});
+ else{save();renderAdmin()}
+};
 window.upLoc=(inp,id)=>readImg(inp,d=>{const l=nStory().locations.find(x=>x.id===id);if(l){l.bg=d;save();renderAdmin()}});
 window.rmLoc=id=>{const s=nStory();s.locations=s.locations.filter(x=>x.id!==id);save();renderAdmin()};
-window.addCast=()=>{const s=nStory();if(!s.cast)s.cast=[];const nm=v('ns_cast');if(!nm){alert('Впиши имя персонажа');return}DB.ncast=(DB.ncast||0)+1;s.cast.push({id:'c'+DB.ncast,name:nm,img:null});save();renderAdmin()};
+window.addCast=()=>{
+ const s=nStory();if(!s.cast)s.cast=[];
+ const nm=v('ns_cast');if(!nm){alert('Впиши имя персонажа');return}
+ DB.ncast=(DB.ncast||0)+1;
+ const c={id:'c'+DB.ncast,name:nm,img:null};
+ s.cast.push(c);
+ const inp=document.getElementById('ns_castfile');
+ if(inp&&inp.files[0])readImg(inp,d=>{c.img=d;save();renderAdmin()});
+ else{save();renderAdmin()}
+};
 window.upCast=(inp,id)=>readImg(inp,d=>{const c=nStory().cast.find(x=>x.id===id);if(c){c.img=d;save();renderAdmin()}});
 window.rmCast=id=>{const s=nStory();s.cast=s.cast.filter(x=>x.id!==id);save();renderAdmin()};
 window.addSeason=()=>{const t=v('ns_se')||('Сезон '+(nStory().seasons.length+1));nStory().seasons.push({id:'se'+(DB.nse++),title:t,episodes:[]});save();renderAdmin()};
@@ -486,6 +544,7 @@ function admOneSeason(){
  const s=nStory(),se=nSeason();
  return `<div class="crumb"><b>${esc(s.title)}</b> › ${esc(se.title)}</div>
   <button class="btn sm ghost" onclick="goStoryBack()">‹ К сезонам</button>
+  ${quickBar()}
   <div style="font-size:13px;color:var(--muted);margin:16px 0 10px">Серии (${se.episodes.length})</div>
   ${se.episodes.map(ep=>`<div class="row"><div class="rt"><div>${esc(ep.title)}</div><div class="m">${ep.scenes.length} сцен</div></div>
     <button class="btn sm ghost" onclick="goEp('${ep.id}')">Открыть</button>
@@ -505,6 +564,7 @@ function admOneEpisode(){
  return `<div class="crumb"><b>${esc(s.title)}</b> › ${esc(se.title)} › ${esc(ep.title)}</div>
   <div class="rowbtns"><button class="btn sm ghost" onclick="goSeasonBack()">‹ К сериям</button>
    <button class="btn sm" onclick="playEp()">Играть серию</button></div>
+  ${quickBar()}
   <div style="font-size:13px;color:var(--muted);margin:14px 0 10px">Сцены (${ep.scenes.length}) · старт: ${ep.start||'—'}</div>
   ${ep.scenes.map(sc=>`<div class="scard">
     <div class="lbl">${sc.id}${ep.start===sc.id?'<span class="startpill">старт</span>':''}${sc.speaker?' · '+esc(sc.speaker):''}${sc.bg?' · 🖼':''}</div>
@@ -531,6 +591,7 @@ function admScene(){
   `<option value="__chat">→ чат с героем</option><option value="__restart">→ заново</option>`;
  return `<div class="crumb">${esc(nStory().title)} › ${esc(nEp().title)} › <b>${sc.id}</b></div>
   <button class="btn sm ghost" onclick="backScene()">‹ К сценам</button>
+  ${quickBar()}
   ${sc.bg?`<img class="thumb" src="${sc.bg}" style="margin-top:12px">`:''}
   <div class="field" style="margin-top:12px"><label>Локация (фон из библиотеки истории)</label><select id="e_loc"><option value="">— без локации —</option>${(nStory().locations||[]).map(l=>`<option value="${l.id}" ${sc.loc===l.id?'selected':''}>${esc(l.name)}</option>`).join('')}</select></div>
   <div class="field"><label>Или своя картинка сцены (перебивает локацию)</label><input type="file" accept="image/*" onchange="upBg(this)">${sc.bg?'<div class="del" onclick="clrBg()" style="margin-top:6px">убрать картинку</div>':''}</div>
@@ -593,7 +654,20 @@ window.delChar=id=>{DB.chars=DB.chars.filter(c=>c.id!==id);delete chats[id];save
 function v(id){const e=document.getElementById(id);return e?e.value.trim():''}
 function readImg(inp,cb){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>cb(r.result);r.readAsDataURL(f)}
 
-render();
+async function bootDB(){
+ try{
+   const saved=await idbGet(IDB_KEY);
+   if(saved&&saved.stories){DB=saved}
+   else{
+     try{const old=JSON.parse(localStorage.getItem('proto_nv5'));
+       if(old&&old.stories){DB=old;await idbSet(IDB_KEY,DB);localStorage.removeItem('proto_nv5')}
+     }catch(e){}
+   }
+ }catch(e){console.error('IndexedDB не открылась:',e)}
+ initChats();
+ render();
+}
+bootDB();
 
 /* ---------- заставка загрузки ---------- */
 (function(){
