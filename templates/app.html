@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Прототип · ИИ-новелла</title>
+<style>
+  :root{--pink:#D4537E;--pink-soft:#FBEAF0;--pink-deep:#993556;--purple:#534AB7;--purple-soft:#EEEDFE;
+    --gold:#BA7517;--gold-soft:#FAEEDA;--ink:#2C2C2A;--muted:#888780;--line:#ece9f0;--bg:#faf7fa;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  .proto-flag{background:#2C2C2A;color:#fff;font-size:12px;text-align:center;padding:6px}
+  .age{background:var(--pink-deep);color:#fff;font-size:11px;text-align:center;padding:4px}
+  .wrap{max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+  header{padding:14px 16px 0}
+  h1{font-size:18px;margin:0 0 2px;font-weight:600}
+  .sub{font-size:12px;color:var(--muted);margin:0 0 12px}
+  .tabs{display:flex;gap:5px;padding:0 12px 10px}
+  .tab{flex:1;text-align:center;font-size:12.5px;padding:9px 0;border-radius:20px;border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer}
+  .tab.on{background:var(--pink);color:#fff;border-color:var(--pink)}
+  .screen{flex:1;padding:6px 16px 24px;overflow:auto}
+  .illo{border-radius:16px;padding:16px;min-height:130px;display:flex;align-items:flex-end;color:#fff;font-size:12px;line-height:1.4;margin-bottom:14px;background:linear-gradient(135deg,#534AB7,#D4537E);background-size:cover;background-position:center}
+  .illo span{background:rgba(0,0,0,.30);padding:5px 9px;border-radius:8px}
+  .speaker{font-size:13px;font-weight:700;color:var(--pink-deep);margin-bottom:4px}
+  .stext{font-size:15px;line-height:1.6;margin-bottom:16px}
+  .choice{background:#fff;border:1px solid var(--pink);color:var(--pink-deep);border-radius:14px;padding:13px 14px;font-size:14.5px;margin-bottom:10px;cursor:pointer;text-align:center;font-weight:500}
+  .choice.dia{border-color:var(--gold);color:var(--gold);background:var(--gold-soft)}
+  .choice:active{opacity:.8}
+  .cta{background:var(--pink);color:#fff;border:none;border-radius:14px;padding:13px;font-size:15px;width:100%;cursor:pointer;font-weight:600;margin-bottom:10px}
+  .storyend{text-align:center;font-size:13px;color:var(--muted);margin:6px 0 14px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:12px}
+  .cover{height:110px;background:linear-gradient(135deg,#534AB7,#D4537E);background-size:cover;background-position:center;display:flex;align-items:flex-end;padding:10px}
+  .cover .badge{background:rgba(0,0,0,.35);color:#fff;font-size:11px;padding:3px 8px;border-radius:8px}
+  .card .body{padding:11px 12px}
+  .card .ttl{font-size:15px;font-weight:600}
+  .card .meta{font-size:12px;color:var(--muted);margin-top:2px}
+  .guy{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:11px 12px;margin-bottom:10px;cursor:pointer;position:relative}
+  .ava{width:50px;height:50px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:600}
+  .guy .nm{font-size:15px;font-weight:600}
+  .guy .arch{font-size:12px;color:var(--purple);background:var(--purple-soft);display:inline-block;padding:2px 8px;border-radius:10px;margin-top:3px}
+  .guy .prev{font-size:12.5px;color:var(--muted);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px}
+  .dot{position:absolute;top:12px;right:14px;width:10px;height:10px;border-radius:50%;background:var(--pink)}
+  .lockrow{opacity:.5}
+  .chead{display:flex;align-items:center;gap:10px;padding:6px 2px 12px}
+  .chead .back{font-size:22px;color:var(--muted);cursor:pointer;padding:2px 6px}
+  .chead .ava{width:40px;height:40px;font-size:17px}.chead .nm{font-size:15px;font-weight:600}.chead .st{font-size:11.5px;color:#1D9E75}
+  .msgs{display:flex;flex-direction:column;gap:8px;padding:4px 0 12px}
+  .b{max-width:80%;padding:9px 13px;font-size:14px;line-height:1.45;border-radius:16px}
+  .b.in{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:5px}
+  .b.out{align-self:flex-end;background:var(--pink);color:#fff;border-bottom-right-radius:5px}
+  .composer{display:flex;gap:8px;align-items:center;padding-top:8px;border-top:1px solid var(--line);position:sticky;bottom:0;background:var(--bg)}
+  .composer input{flex:1;border:1px solid var(--line);border-radius:20px;padding:10px 14px;font-size:14px;outline:none}
+  .send{width:38px;height:38px;border:none;border-radius:50%;background:var(--pink);color:#fff;font-size:18px;cursor:pointer}
+  .q{font-size:16px;font-weight:600;margin:18px 0 12px}
+  .opt{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px 14px;font-size:14px;margin-bottom:10px;cursor:pointer}
+  .match{text-align:center;padding:20px 6px}.match .ava{width:90px;height:90px;font-size:36px;margin:0 auto 14px}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+  .field input,.field textarea,.field select{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;font-family:inherit;outline:none;background:#fff}
+  .field textarea{min-height:60px;resize:vertical}
+  .btn{background:var(--pink);color:#fff;border:none;border-radius:14px;padding:12px;font-size:15px;width:100%;cursor:pointer;font-weight:600}
+  .btn.ghost{background:#fff;color:var(--pink-deep);border:1px solid var(--line);font-weight:500}
+  .btn.sm{width:auto;padding:7px 12px;font-size:13px;border-radius:10px}
+  .del{font-size:12px;color:#c0392b;cursor:pointer}
+  .note{font-size:12px;color:var(--muted);background:var(--pink-soft);border-radius:12px;padding:10px 12px;margin-bottom:14px;line-height:1.5}
+  .crumb{font-size:12px;color:var(--muted);margin-bottom:10px}
+  .crumb b{color:var(--ink)}
+  .row{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:9px;display:flex;align-items:center;gap:10px}
+  .row .rt{flex:1}.row .rt .m{font-size:12px;color:var(--muted)}
+  .rowbtns{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+  .scard{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:9px}
+  .scard .lbl{font-size:11px;color:var(--purple);font-weight:600}
+  .scard .txt{font-size:13px;margin:4px 0 6px}
+  .scard .ch{font-size:12px;color:var(--muted)}
+  .startpill{font-size:10px;background:#1D9E75;color:#fff;padding:2px 6px;border-radius:7px;margin-left:6px}
+  .thumb{width:100%;height:90px;object-fit:cover;border-radius:10px;margin-bottom:8px}
+  .choiceEdit{border:1px solid var(--line);border-radius:12px;padding:9px;margin-bottom:9px}
+  .choiceEdit input,.choiceEdit select{margin-bottom:6px}
+  .two{display:flex;gap:8px}.two>*{flex:1}
+
+  .libtabs{display:flex;gap:6px;margin-bottom:16px}
+  .libtab{flex:1;text-align:center;font-size:12.5px;padding:8px 0;border-radius:20px;border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer}
+  .libtab.on{background:var(--pink);color:#fff;border-color:var(--pink)}
+  .libfeatured{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+  .libfeatured .libcover{height:170px;background:linear-gradient(135deg,#534AB7,#D4537E);background-size:cover;background-position:center}
+  .libfeatured .libbody{padding:14px}
+  .libfeatured .libname{font-size:18px;font-weight:700;margin-bottom:6px}
+  .libfeatured .libdesc{font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.4}
+  .libgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .libcard{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05);cursor:pointer}
+  .libcard .libcover{height:110px;background:linear-gradient(135deg,#534AB7,#D4537E);background-size:cover;background-position:center;position:relative}
+  .libcard .libbadge{position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.45);color:#fff;font-size:9.5px;padding:2px 7px;border-radius:8px;font-weight:600}
+  .libcard .libbody{padding:10px 11px}
+  .libcard .libname{font-size:13.5px;font-weight:600;margin-bottom:3px}
+  .libcard .libdesc{font-size:11.5px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .libempty{text-align:center;color:var(--muted);font-size:13px;padding:40px 10px}
+  .libback{font-size:12.5px;color:var(--pink-deep);cursor:pointer;margin-bottom:10px;display:inline-flex;align-items:center;gap:4px;font-weight:600}
+
+  .stage{position:relative;border-radius:16px;overflow:hidden;min-height:280px;margin-bottom:14px;
+    background-size:cover;background-position:center;background:linear-gradient(135deg,#534AB7,#D4537E)}
+  .stage .stagenote{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.35);color:#fff;font-size:11px;padding:5px 9px;border-radius:8px}
+  .stage .charport{position:absolute;bottom:0;left:50%;transform:translateX(-50%);height:100%;max-width:78%;object-fit:contain;object-position:bottom}
+
+  #splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+    background:#0a0505 url(../static/bg/app-splash.png) center/cover no-repeat;color:#fff;transition:opacity .5s ease;padding:24px;padding-bottom:11%;text-align:center}
+  #splash.hide{opacity:0;pointer-events:none}
+  #splash .bar{width:220px;height:8px;border-radius:6px;background:rgba(255,255,255,.18);overflow:hidden;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,.5)}
+  #splash .bar i{display:block;height:100%;width:0%;border-radius:6px;background:linear-gradient(90deg,#7a0d0d,#e2263f);transition:width .12s linear}
+  #splash .pct{font-size:13px;font-weight:700;color:#fff;margin-bottom:8px;text-shadow:0 1px 4px rgba(0,0,0,.8)}
+  #splash .hint{font-size:12px;color:#e8b9be;min-height:16px;font-style:italic;text-shadow:0 1px 4px rgba(0,0,0,.8)}
+</style>
+</head>
+<body>
+<div id="splash">
+  <div class="bar"><i id="splashFill"></i></div>
+  <div class="pct" id="splashPct">0%</div>
+  <div class="hint" id="splashHint">загружаем историю…</div>
+</div>
+<div class="proto-flag">ПРОТОТИП · данные сохраняются в этом браузере</div>
+<div class="wrap">
+  <header><h1 id="apptitle">Мои истории</h1></header>
+  <div class="tabs">
+    <div class="tab on" data-t="story">История</div>
+    <div class="tab" data-t="roster">Герои</div>
+    <div class="tab" data-t="blitz">Блиц</div>
+    <div class="tab" data-t="admin">Админка</div>
+  </div>
+  <div class="screen" id="screen"></div>
+</div>
+
+<script>
+const COLORS=["#D4537E","#534AB7","#1D9E75","#BA7517","#185FA5","#993C1D"];
+const ARCHS=["Холодный альфа","Дерзкий омега","Нежный бета","Нежный принц"];
+const REPLY={
+ "Холодный альфа":["Твой запах я ни с чем не спутаю.","Не убегай от меня. Бесполезно.","Ты мой. Привыкай.","...рядом с тобой я забываю держать себя в руках."],
+ "Дерзкий омега":["Ой, покраснел? Мило 😏","Не притворяйся, что тебе всё равно.","Сбежим отсюда вдвоём?"],
+ "Нежный бета":["Я всегда выслушаю.","Не грусти, я рядом.","С тобой так спокойно…"],
+ "Нежный принц":["Ты — самое светлое за неделю.","Расскажи, как прошёл день."],
+};
+
+/* ---------- данные ---------- */
+function seed(){
+ const chars=[];
+ const S=(id,text,choices,x={})=>Object.assign({id,text,choices,bg:null},x);
+ const L='../static/bg/', I='../static/img/';
+ const ep={id:"e1",title:"Серия 1",start:"s01",scenes:[
+  S("s01","«РАЗЛУЧНИКИ» появляется на экране.",[{t:"Далее",go:"s02",type:"free"}],{illo:"анимация: надпись РАЗЛУЧНИКИ"}),
+  S("s02","Нетипичное шоу проверки чувств. Уверены, что ваш партнёр — тот, с кем вы готовы провести всю жизнь?",[{t:"Далее",go:"s03",type:"free"}]),
+  S("s03","Деньги. Слава. Новые лица. Устоит ли ваша любовь перед тем, что мы предложим?",[{t:"Далее",go:"s04",type:"free"}]),
+  S("s04","Главный приз — 300 000 000. Шоу, где пары проверяют свою любовь на прочность в честной и жестокой битве.",[{t:"Далее",go:"s05",type:"free"}]),
+  S("s05","«РАЗЛУЧНИКИ» — скоро на экранах.",[{t:"Далее",go:"s06",type:"free"}]),
+
+  S("s06","Видела? Это то самое новое шоу — «Разлучники».",[{t:"Далее",go:"s07",type:"free"}],{speaker:"Ника",loc:"l1"}),
+  S("s07","Слышала, это не просто обмен партнёрами. Там всё жёстче.",[{t:"Далее",go:"s08",type:"free"}],{speaker:"Бет",loc:"l1"}),
+  S("s08","Говорят, чтобы копить призовые баллы, нужно сближаться с чужим партнёром. Не со своим.",[{t:"Далее",go:"s09",type:"free"}],{speaker:"Ника",loc:"l1"}),
+  S("s09","Чем ближе — тем больше денег. Жёстко, ха-ха.",[{t:"Далее",go:"s10",type:"free"}],{speaker:"Бет",loc:"l1"}),
+  S("s10","Не могу дождаться начала. Хочу уже увидеть участников.",[{t:"Далее",go:"s11",type:"free"}],{speaker:"Ника",loc:"l1"}),
+
+  S("s11","«РАЗЛУЧНИКИ. В следующем выпуске — "+'"Война парочек"'+". Знакомьтесь с участниками проекта.»",[{t:"Далее",go:"s12",type:"free"}],{speaker:"Диктор (за кадром)",illo:"съёмочная площадка — фон в разработке"}),
+
+  S("s12","Участница шоу.",[{t:"Далее",go:"s13",type:"free"}],{speaker:"Симона"}),
+  S("s13","Участник шоу.",[{t:"Далее",go:"s14",type:"free"}],{speaker:"Далтон"}),
+  S("s14","Участница шоу.",[{t:"Далее",go:"s15",type:"free"}],{speaker:"Вивьен"}),
+  S("s15","Участник шоу.",[{t:"Далее",go:"s16",type:"free"}],{speaker:"Итан"}),
+  S("s16","БИТВА НАЧИНАЕТСЯ",[{t:"Далее",go:"s17",type:"free"}],{illo:"титр"}),
+
+  S("s17","(Монтаж примерки образа: топ → брюки/юбка → аксессуар — заменить, когда будут готовы реальные наряды) «Отлично выгляжу, как всегда.»",[{t:"Далее",go:"s18",type:"free"}],{speaker:"Симона",loc:"l2"}),
+
+  S("s18","Ты как всегда сияешь с утра.",[{t:"Далее",go:"s19",type:"free"}],{speaker:"Майя",loc:"l3"}),
+  S("s19","Стараюсь.",[{t:"Далее",go:"s20",type:"free"}],{speaker:"Симона",loc:"l3"}),
+
+  S("s20","Ну что, признайте — я довольно крута.",[{t:"Далее",go:"s21",type:"free"}],{speaker:"Симона",loc:"l1"}),
+  S("s21","Идеальных людей не бывает!",[{t:"Далее",go:"s22",type:"free"}],{speaker:"Одногруппник",loc:"l1"}),
+  S("s22","Значит, я исключение. Хотя ладно — иногда и я ошибаюсь.",[{t:"Далее",go:"s23a",type:"free"}],{speaker:"Симона",loc:"l1"}),
+
+  S("s23a","(молча проходит мимо, не ответив на приветствие)",[{t:"Далее",go:"s23b",type:"free"}],{speaker:"Вивьен",loc:"l3"}),
+  S("s23b","Странно. Что это было?",[{t:"Попробовать поздороваться ещё раз",go:"s24",type:"free"},{t:"Пожать плечами и пройти мимо",go:"s24",type:"free"}],{speaker:"Симона",loc:"l3"}),
+
+  S("s24","Хочу выложить фото в инсту, а получается катастрофа. Помоги?",[{t:"«Конечно, идём» (тепло)",go:"s25a",type:"free"},{t:"«Ладно, так и быть» (с подколкой)",go:"s25b",type:"free"}],{speaker:"Далтон",loc:"l4"}),
+  S("s25a","(тепло) Конечно, идём. Сделаем тебе красивые кадры.",[{t:"Далее",go:"s26",type:"free"}],{speaker:"Симона",loc:"l5"}),
+  S("s25b","(с подколкой) Ладно, так и быть, раз без меня никак.",[{t:"Далее",go:"s26",type:"free"}],{speaker:"Симона",loc:"l5"}),
+  S("s26","Без тебя бы не вышло. Спасибо.",[{t:"Далее",go:"s27",type:"free"}],{speaker:"Далтон",loc:"l5"}),
+
+  S("s27","(курит у подъезда, слышит шум переезда) Кто-то заселяется. Тоже из универа, что ли?",[{t:"Далее",go:"s28",type:"free"}],{speaker:"Симона",loc:"l6"}),
+  S("s28","Ты вообще-то красивая, не парься.",[{t:"Далее",go:"s29",type:"free"}],{speaker:"Итан",loc:"l7"}),
+
+  S("s29","Титры: «Первая пара — Далтон и Вивьен. Вторая пара — Симона и Итан.»",[{t:"Далее",go:"s30",type:"free"}],{illo:"титры серии"}),
+  S("s30","Наверное, вам интересно, как мы вообще до этого докатились...",[{t:"Написать Итану",go:"__chat",type:"free"},{t:"Пройти заново",go:"__restart",type:"free"}],{speaker:"Симона",endnote:"Конец пролога. Дальше начинается сама история на шоу."}),
+ ]};
+ const story={id:1,title:"Разлучники",genre:"драма · реалити-шоу · романтика",cover:I+"razluchniki-cover.png",
+  desc:"Симона узнаёт, что её парень изменил ей с девушкой Итана — и теперь эти двое идут на шоу «Разлучники» испытывать чувства. Симона предлагает Итану объединиться и разбить предателей изнутри.",
+  gg:{name:"Симона",desc:"Игрок (жГГ). Высокая, дизайнер, своё мнение, без комплексов. Внешность кастомизируемая — добавим позже."},
+  locations:[
+   {id:"l1",name:"Коридор универа",bg:L+"univer-koridor.jpg"},
+   {id:"l2",name:"Зеркало (комната Симоны)",bg:L+"zerkalo-jgg.jpg"},
+   {id:"l3",name:"Кампус универа",bg:L+"univer.jpg"},
+   {id:"l4",name:"Комната Симоны",bg:L+"komnata-jgg.jpg"},
+   {id:"l5",name:"Кухня Симоны",bg:L+"kuhnya-jgg.jpg"},
+   {id:"l6",name:"Подъезд",bg:L+"podyezd.jpg"},
+   {id:"l7",name:"Кухня Итана и Вивьен",bg:L+"kuhnya-mgg.jpg"},
+  ],
+  cast:[
+   {id:"c1",name:"Симона",img:I+"simona.png"},
+   {id:"c2",name:"Итан",img:I+"itan.png"},
+   {id:"c3",name:"Далтон",img:I+"dalton.png"},
+   {id:"c4",name:"Вивьен",img:I+"vivien.png"},
+   {id:"c5",name:"Ника",img:I+"nika.png"},
+   {id:"c6",name:"Бет",img:I+"bet.png"},
+  ],
+  seasons:[{id:"se1",title:"Сезон 1",episodes:[ep]}]};
+ return {chars,stories:[story],active:{st:1,se:"se1",ep:"e1"},nc:1,ns:2,nse:2,nep:2,nsc:31,nloc:8,ncast:7};
+}
+let DB;try{DB=JSON.parse(localStorage.getItem('proto_nv3'))}catch(e){DB=null}
+if(!DB||!DB.stories)DB=seed();
+function save(){try{localStorage.setItem('proto_nv3',JSON.stringify(DB))}catch(e){alert('Не хватило места в браузере (много картинок). Используй фото полегче.')}}
+window.resetAll=()=>{if(confirm('Сбросить всё к демо?')){DB=seed();save();initChats();render()}};
+
+let chats={},openChat=null,met={};
+function initChats(){chats={};DB.chars.forEach(c=>chats[c.id]=[{who:'in',text:c.first}])}
+initChats();
+
+/* ---------- каркас ---------- */
+const screen=document.getElementById('screen');
+let tab='story';
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>setTab(t.dataset.t));
+function setTab(n){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.t===n));tab=n;openChat=null;render()}
+window.switchTab=setTab;
+const byId=id=>DB.chars.find(c=>c.id===id);
+const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+function ava(c,cls=''){return `<div class="ava ${cls}" style="background:${c.color}">${(c.name||'?')[0]}</div>`}
+function getStory(id){return DB.stories.find(s=>s.id===id)}
+function activeEp(){const a=DB.active;const st=getStory(a.st);if(!st)return null;const se=st.seasons.find(x=>x.id===a.se);if(!se)return null;return se.episodes.find(x=>x.id===a.ep)||null}
+
+function render(){
+ if(!(tab==='story'&&libraryOpen))screen.style.cssText='';
+ if(tab==='story')return renderStory();
+ if(tab==='roster')return openChat?renderChat():renderRoster();
+ if(tab==='blitz')return renderBlitz();
+ if(tab==='admin')return renderAdmin();
+}
+
+/* ---------- библиотека историй ---------- */
+let libraryOpen=true, libTab='new';
+window.libSet=t=>{libTab=t;renderLibrary()};
+window.libOpen=()=>{libraryOpen=true;render()};
+window.libPlay=id=>{
+ const s=getStory(id);const se=s.seasons[0];const ep=se&&se.episodes[0];
+ if(!ep||!ep.scenes.length){alert('В этой истории пока нет доступных серий.');return}
+ DB.active={st:id,se:se.id,ep:ep.id};node=null;libraryOpen=false;save();render();
+};
+function libCard(s,big){
+ const cover=s.cover?`style="background-image:url(${s.cover})"`:'';
+ const ready=s.seasons.some(se=>se.episodes.some(e=>e.scenes.length));
+ return `<div class="${big?'libfeatured':'libcard'}" onclick="libPlay(${s.id})">
+   <div class="libcover" ${cover}>${big?'':`<span class="libbadge">${ready?'Играть':'Скоро'}</span>`}</div>
+   <div class="libbody"><div class="libname">${esc(s.title)}</div>
+    <div class="libdesc">${esc(s.desc||'Описание скоро появится…')}</div>
+    ${big?`<button class="btn sm">${ready?'Играть':'Скоро'}</button>`:''}</div></div>`;
+}
+function renderLibrary(){
+ screen.style.cssText='background:#1a0505 url(../static/bg/library-bg.png) center/cover no-repeat;margin:0 -16px -24px;padding:16px 16px 30px;border-radius:0 0 18px 18px';
+ const list=DB.stories||[];
+ const featured=list[0];
+ let h=`<div class="libtabs">
+   <div class="libtab ${libTab==='new'?'on':''}" onclick="libSet('new')">Новые</div>
+   <div class="libtab ${libTab==='foryou'?'on':''}" onclick="libSet('foryou')">Для вас</div>
+   <div class="libtab ${libTab==='top'?'on':''}" onclick="libSet('top')">Популярное</div>
+ </div>`;
+ if(!list.length){h+='<div class="libempty">Историй пока нет.<br>Собери первую во вкладке «Админка».</div>';screen.innerHTML=h;return}
+ if(featured)h+=libCard(featured,true);
+ h+=`<div class="libgrid">${list.map(s=>libCard(s,false)).join('')}</div>`;
+ screen.innerHTML=h;screen.scrollTop=0;
+}
+
+/* ---------- проигрывание ---------- */
+let node=null;
+function renderStory(){
+ if(libraryOpen)return renderLibrary();
+ const ep=activeEp();
+ if(!ep||!ep.scenes.length){screen.innerHTML='<div class="libback" onclick="libOpen()">‹ Библиотека</div><div class="note">Нет серий для игры. Собери в Админке и нажми «Играть».</div>';return}
+ if(!node)node=ep.start||ep.scenes[0].id;
+ const n=ep.scenes.find(s=>s.id===node)||ep.scenes[0];
+ DB.chars.forEach(c=>{if(n.speaker===c.name)met[c.id]=true});
+ let h='<div class="libback" onclick="libOpen()">‹ Библиотека</div>';
+ const st=getStory(DB.active.st);
+ const loc=(n.loc&&st&&st.locations)?st.locations.find(l=>l.id===n.loc):null;
+ const bgUrl=(loc&&loc.bg)?loc.bg:n.bg;
+ const bg=bgUrl?`style="background-image:url(${bgUrl})"`:'';
+ const castMember=(n.speaker&&st&&st.cast)?st.cast.find(c=>c.name===n.speaker):null;
+ if(n.illo||bgUrl||loc||castMember){
+   h+=`<div class="stage" ${bg}>`;
+   if(!bgUrl)h+=`<span class="stagenote">арт: ${esc(n.illo||(loc?loc.name:''))}</span>`;
+   if(castMember&&castMember.img)h+=`<img class="charport" src="${castMember.img}">`;
+   h+=`</div>`;
+ }
+ if(n.speaker)h+=`<div class="speaker">${esc(n.speaker)}</div>`;
+ h+=`<div class="stext">${esc(n.text)}</div>`;
+ if(n.endnote)h+=`<div class="storyend">${esc(n.endnote)}</div>`;
+ (n.choices||[]).forEach(c=>{
+  if(c.go==='__chat')h+=`<button class="cta" onclick="switchTab('roster')">${esc(c.t)} · чат</button>`;
+  else if(c.go==='__restart')h+=`<button class="btn ghost" onclick="restart()">${esc(c.t)}</button>`;
+  else if(c.type==='dia')h+=`<div class="choice dia" onclick="goNode('${c.go}')">💎 ${c.cost||0} · ${esc(c.t)}</div>`;
+  else h+=`<div class="choice" onclick="goNode('${c.go}')">${esc(c.t)}</div>`;
+ });
+ if(!n.choices||!n.choices.length)h+=`<button class="btn ghost" onclick="restart()">Пройти заново</button>`;
+ screen.innerHTML=h;screen.scrollTop=0;
+}
+window.goNode=id=>{node=id;render()};
+window.restart=()=>{node=activeEp().start;render()};
+
+/* ---------- герои/чат ---------- */
+function renderRoster(){
+ screen.innerHTML=`<div class="note">Переписка отдельно от сюжета. Герой открывается, когда встретишь его в истории.</div>`+
+  DB.chars.map(c=>{const m=met[c.id]!==false&&met[c.id]!==undefined?true:met[c.id];const isMet=met[c.id]===true;
+   const last=chats[c.id][chats[c.id].length-1];
+   return `<div class="guy ${isMet?'':'lockrow'}" onclick="${isMet?`open_(${c.id})`:`alert('Встреть ${esc(c.name)} в истории')`}">${ava(c)}
+    <div style="flex:1;min-width:0"><div class="nm">${esc(c.name)} ${isMet?'':'· 🔒'}</div>
+    <div class="arch">${esc(c.arch)}</div><div class="prev">${isMet?esc(last.text):'познакомься в истории'}</div></div>
+    ${isMet&&last.who==='in'?'<div class="dot"></div>':''}</div>`}).join('');
+}
+window.open_=id=>{if(id===null)openChat=null;else{met[id]=true;openChat=id}render()};
+function renderChat(){
+ const c=byId(openChat),m=chats[c.id];
+ screen.innerHTML=`<div class="chead"><div class="back" onclick="open_(null)">‹</div>${ava(c)}
+   <div><div class="nm">${esc(c.name)}</div><div class="st">в сети</div></div></div>
+   <div class="msgs">${m.map(x=>`<div class="b ${x.who}">${esc(x.text)}</div>`).join('')}</div>
+   <div class="composer"><input id="inp" placeholder="Напиши ${esc(c.name)}…" autocomplete="off"><button class="send" onclick="send()">↑</button></div>`;
+ const inp=document.getElementById('inp');inp.focus();inp.onkeydown=e=>{if(e.key==='Enter')send()};screen.scrollTop=1e9;
+}
+window.send=()=>{const c=byId(openChat),inp=document.getElementById('inp'),t=inp.value.trim();if(!t)return;
+ chats[c.id].push({who:'out',text:t});inp.value='';renderChat();
+ setTimeout(()=>{const p=REPLY[c.arch]||["…"];chats[c.id].push({who:'in',text:p[Math.floor(Math.random()*p.length)]});if(openChat===c.id)renderChat()},700);
+};
+
+/* ---------- блиц ---------- */
+let qi=0,scores={},blitz={};
+const QS=[{q:"Кто цепляет?",opts:[["Властный альфа","Холодный альфа"],["Дерзкий омега","Дерзкий омега"]]},
+ {q:"Идеальный вечер?",opts:[["Опасное притяжение","Холодный альфа"],["Драйв","Дерзкий омега"]]}];
+function renderBlitz(){
+ if(blitz.done){const c=blitz.c;screen.innerHTML=`<div class="match">${ava(c)}
+   <div style="font-size:13px;color:var(--muted);margin-bottom:4px">твой герой</div>
+   <div style="font-size:22px;font-weight:600">${esc(c.name)}</div><div class="arch" style="margin:8px 0 16px;display:inline-block">${esc(c.arch)}</div>
+   <div class="note" style="text-align:left">${esc(c.look)}</div>
+   <button class="btn" onclick="open_(${c.id});switchTab('roster')">В чат</button>
+   <button class="btn ghost" style="margin-top:8px" onclick="reblitz()">Заново</button></div>`;return}
+ const cur=QS[qi];screen.innerHTML=`<div class="q">${qi+1}/${QS.length} · ${cur.q}</div>`+cur.opts.map(o=>`<div class="opt" onclick="pick('${o[1]}')">${o[0]}</div>`).join('');
+}
+window.pick=a=>{scores[a]=(scores[a]||0)+1;qi++;if(qi>=QS.length){const b=Object.keys(scores).sort((x,y)=>scores[y]-scores[x])[0];const p=DB.chars.filter(c=>c.arch===b);blitz={done:1,c:p.length?p[0]:DB.chars[0]}}render()};
+window.reblitz=()=>{qi=0;scores={};blitz={};render()};
+
+/* ================= АДМИНКА ================= */
+let aTab='stories', nav={st:null,se:null,ep:null,sc:null}, cform=null, showNew=false;
+const epCount=s=>s.seasons.reduce((a,se)=>a+se.episodes.length,0);
+window.toggleNew=()=>{showNew=!showNew;renderAdmin()};
+function renderAdmin(){
+ screen.innerHTML=`<div class="two" style="margin-bottom:14px">
+   <button class="btn sm ${aTab==='stories'?'':'ghost'}" onclick="aSet('stories')">Истории</button>
+   <button class="btn sm ${aTab==='chars'?'':'ghost'}" onclick="aSet('chars')">Герои</button></div>`+
+   (aTab==='stories'?admStories():admChars());
+ bindAdmin();
+}
+window.aSet=t=>{aTab=t;nav={st:null,se:null,ep:null,sc:null};if(t==='chars'&&!cform)cform={name:'',arch:'Холодный альфа',color:COLORS[0],look:'',first:''};renderAdmin()};
+
+const nStory=()=>getStory(nav.st);
+const nSeason=()=>{const s=nStory();return s&&s.seasons.find(x=>x.id===nav.se)};
+const nEp=()=>{const se=nSeason();return se&&se.episodes.find(x=>x.id===nav.ep)};
+const nScene=()=>{const e=nEp();return e&&e.scenes.find(x=>x.id===nav.sc)};
+
+/* --- уровень 0: галерея историй --- */
+function admStories(){
+ if(nav.st)return admOneStory();
+ const newForm=`<div class="card"><div class="body">
+    <div class="ttl" style="margin-bottom:8px">Новая история</div>
+    <div class="field"><label>Название</label><input id="ns_t" placeholder="Например, Тени города"></div>
+    <div class="field"><label>Жанр (пишешь сам)</label><input id="ns_g" placeholder="яой · омегаверс · мистика"></div>
+    <div class="field"><label>О чём история (коротко)</label><textarea id="ns_d" placeholder="Омега прячет свою природу, пока не встречает альфу…"></textarea></div>
+    <div class="field"><label>Имя ГГ (за кого играют)</label><input id="ns_gg" placeholder="Юки"></div>
+    <div class="field"><label>Описание ГГ</label><textarea id="ns_ggd" placeholder="Омега, 21 год, скрывает свою природу…"></textarea></div>
+    <button class="btn" onclick="createStory()">Создать историю</button></div></div>`;
+ return `<div class="note">Твоя галерея историй. Внутри каждой — сезоны, серии и сцены.</div>
+  <button class="btn" onclick="toggleNew()">${showNew?'× Закрыть':'+ Добавить новую историю'}</button>
+  ${showNew?newForm:''}
+  <div style="font-size:13px;color:var(--muted);margin:16px 0 10px">Мои истории (${DB.stories.length})</div>
+  ${DB.stories.map(s=>`<div class="card">
+     <div class="cover" style="${s.cover?`background-image:url(${s.cover})`:''}"><span class="badge">${esc(s.genre||'без жанра')}</span></div>
+     <div class="body"><div class="ttl">${esc(s.title)}</div>
+       ${s.desc?`<div class="meta" style="margin-top:4px">${esc(s.desc)}</div>`:''}
+       <div class="meta" style="margin-top:6px">ГГ: ${esc(s.gg?s.gg.name:'—')} · ${s.seasons.length} сезон(ов) · ${epCount(s)} серий</div>
+       <div class="rowbtns"><button class="btn sm" onclick="playStory(${s.id})">Играть</button>
+       <button class="btn sm ghost" onclick="goStory(${s.id})">Редактировать</button>
+       <button class="btn sm ghost" onclick="rmStory(${s.id})">Удалить</button></div></div></div>`).join('')}
+  <button class="btn ghost" style="margin-top:8px" onclick="resetAll()">Сбросить к демо</button>`;
+}
+window.createStory=()=>{
+ const t=v('ns_t');if(!t){alert('Впиши название');return}
+ const st={id:DB.ns++,title:t,genre:v('ns_g'),desc:v('ns_d'),cover:null,gg:{name:v('ns_gg')||'ГГ',desc:v('ns_ggd')},locations:[],seasons:[]};
+ DB.stories.push(st);save();showNew=false;nav.st=st.id;renderAdmin();
+};
+window.playStory=id=>{const s=getStory(id);const se=s.seasons[0];const ep=se&&se.episodes[0];if(!ep){alert('В истории нет серий. Добавь сезон и серию.');return}DB.active={st:id,se:se.id,ep:ep.id};save();node=null;libraryOpen=false;setTab('story')};
+window.goStory=id=>{nav={st:id,se:null,ep:null,sc:null};renderAdmin()};
+window.rmStory=id=>{if(confirm('Удалить историю?')){DB.stories=DB.stories.filter(s=>s.id!==id);save();renderAdmin()}};
+
+/* --- уровень 1: история → ГГ + сезоны --- */
+function admOneStory(){
+ if(nav.se)return admOneSeason();
+ const s=nStory();
+ if(!s.locations)s.locations=[];
+ if(!s.cast)s.cast=[];
+ return `<div class="crumb"><b>${esc(s.title)}</b></div>
+  <button class="btn sm ghost" onclick="goStories()">‹ К галерее</button>
+  ${s.cover?`<img class="thumb" src="${s.cover}" style="margin-top:12px">`:''}
+  <div class="field" style="margin-top:12px"><label>Обложка истории</label><input type="file" accept="image/*" onchange="upCover(this)"></div>
+  <div class="field"><label>Название</label><input id="e_t" value="${esc(s.title)}"></div>
+  <div class="field"><label>Жанр</label><input id="e_g" value="${esc(s.genre)}"></div>
+  <div class="field"><label>О чём история</label><textarea id="e_d">${esc(s.desc||'')}</textarea></div>
+  <div class="field"><label>Имя ГГ</label><input id="e_gg" value="${esc(s.gg.name)}"></div>
+  <div class="field"><label>Описание ГГ</label><textarea id="e_ggd">${esc(s.gg.desc)}</textarea></div>
+  <button class="btn sm" onclick="saveStoryMeta()">Сохранить</button>
+  <div style="font-size:13px;color:var(--muted);margin:20px 0 10px">Локации (${s.locations.length}) — фоны, которые переиспользуешь в сценах</div>
+  ${s.locations.map(l=>`<div class="row">${l.bg?`<img src="${l.bg}" style="width:46px;height:46px;object-fit:cover;border-radius:8px">`:'<div style="width:46px;height:46px;border-radius:8px;background:var(--purple-soft)"></div>'}
+    <div class="rt"><div>${esc(l.name)}</div><div class="m">${l.bg?'фон загружен':'нет фона'}</div></div>
+    <label class="btn sm ghost" style="cursor:pointer">Фон<input type="file" accept="image/*" style="display:none" onchange="upLoc(this,'${l.id}')"></label>
+    <span class="del" onclick="rmLoc('${l.id}')">✕</span></div>`).join('')}
+  <div class="field" style="margin-top:8px"><input id="ns_loc" placeholder="Название локации (Бар ночью)"></div>
+  <button class="btn ghost" onclick="addLoc()">+ Добавить локацию</button>
+  <div style="font-size:13px;color:var(--muted);margin:20px 0 10px">Действующие лица (${s.cast.length}) — портреты на прозрачном фоне, показываются поверх фона сцены, когда имя в поле «Кто говорит» совпадает с именем здесь</div>
+  ${s.cast.map(c=>`<div class="row">${c.img?`<img src="${c.img}" style="width:46px;height:46px;object-fit:cover;border-radius:8px">`:'<div style="width:46px;height:46px;border-radius:8px;background:var(--purple-soft)"></div>'}
+    <div class="rt"><div>${esc(c.name)}</div><div class="m">${c.img?'портрет загружен':'нет портрета'}</div></div>
+    <label class="btn sm ghost" style="cursor:pointer">Портрет<input type="file" accept="image/*" style="display:none" onchange="upCast(this,'${c.id}')"></label>
+    <span class="del" onclick="rmCast('${c.id}')">✕</span></div>`).join('')}
+  <div class="field" style="margin-top:8px"><input id="ns_cast" placeholder="Имя персонажа (Итан) — как в поле «Кто говорит»"></div>
+  <button class="btn ghost" onclick="addCast()">+ Добавить персонажа</button>
+  <div style="font-size:13px;color:var(--muted);margin:20px 0 10px">Сезоны (${s.seasons.length})</div>
+  ${s.seasons.map(se=>`<div class="row"><div class="rt"><div>${esc(se.title)}</div><div class="m">${se.episodes.length} серий</div></div>
+    <button class="btn sm ghost" onclick="goSeason('${se.id}')">Открыть</button>
+    <span class="del" onclick="rmSeason('${se.id}')">✕</span></div>`).join('')}
+  <div class="field" style="margin-top:10px"><input id="ns_se" placeholder="Название сезона (Сезон 1)"></div>
+  <button class="btn" onclick="addSeason()">+ Добавить сезон</button>`;
+}
+window.goStories=()=>{nav.st=null;renderAdmin()};
+window.saveStoryMeta=()=>{const s=nStory();s.title=v('e_t')||s.title;s.genre=v('e_g');s.desc=v('e_d');s.gg.name=v('e_gg')||'ГГ';s.gg.desc=v('e_ggd');save();renderAdmin()};
+window.upCover=inp=>readImg(inp,d=>{nStory().cover=d;save();renderAdmin()});
+window.addLoc=()=>{const s=nStory();if(!s.locations)s.locations=[];DB.nloc=(DB.nloc||10)+1;s.locations.push({id:'l'+DB.nloc,name:v('ns_loc')||('Локация '+(s.locations.length+1)),bg:null});save();renderAdmin()};
+window.upLoc=(inp,id)=>readImg(inp,d=>{const l=nStory().locations.find(x=>x.id===id);if(l){l.bg=d;save();renderAdmin()}});
+window.rmLoc=id=>{const s=nStory();s.locations=s.locations.filter(x=>x.id!==id);save();renderAdmin()};
+window.addCast=()=>{const s=nStory();if(!s.cast)s.cast=[];const nm=v('ns_cast');if(!nm){alert('Впиши имя персонажа');return}DB.ncast=(DB.ncast||0)+1;s.cast.push({id:'c'+DB.ncast,name:nm,img:null});save();renderAdmin()};
+window.upCast=(inp,id)=>readImg(inp,d=>{const c=nStory().cast.find(x=>x.id===id);if(c){c.img=d;save();renderAdmin()}});
+window.rmCast=id=>{const s=nStory();s.cast=s.cast.filter(x=>x.id!==id);save();renderAdmin()};
+window.addSeason=()=>{const t=v('ns_se')||('Сезон '+(nStory().seasons.length+1));nStory().seasons.push({id:'se'+(DB.nse++),title:t,episodes:[]});save();renderAdmin()};
+window.goSeason=id=>{nav.se=id;nav.ep=null;renderAdmin()};
+window.rmSeason=id=>{if(confirm('Удалить сезон?')){const s=nStory();s.seasons=s.seasons.filter(x=>x.id!==id);save();renderAdmin()}};
+
+/* --- уровень 2: сезон → серии --- */
+function admOneSeason(){
+ if(nav.ep)return admOneEpisode();
+ const s=nStory(),se=nSeason();
+ return `<div class="crumb"><b>${esc(s.title)}</b> › ${esc(se.title)}</div>
+  <button class="btn sm ghost" onclick="goStoryBack()">‹ К сезонам</button>
+  <div style="font-size:13px;color:var(--muted);margin:16px 0 10px">Серии (${se.episodes.length})</div>
+  ${se.episodes.map(ep=>`<div class="row"><div class="rt"><div>${esc(ep.title)}</div><div class="m">${ep.scenes.length} сцен</div></div>
+    <button class="btn sm ghost" onclick="goEp('${ep.id}')">Открыть</button>
+    <span class="del" onclick="rmEp('${ep.id}')">✕</span></div>`).join('')}
+  <div class="field" style="margin-top:10px"><input id="ns_ep" placeholder="Название серии (Серия 1. Знакомство)"></div>
+  <button class="btn" onclick="addEp()">+ Добавить серию</button>`;
+}
+window.goStoryBack=()=>{nav.se=null;renderAdmin()};
+window.addEp=()=>{const t=v('ns_ep')||('Серия '+(nSeason().episodes.length+1));nSeason().episodes.push({id:'e'+(DB.nep++),title:t,start:null,scenes:[]});save();renderAdmin()};
+window.goEp=id=>{nav.ep=id;nav.sc=null;renderAdmin()};
+window.rmEp=id=>{if(confirm('Удалить серию?')){const se=nSeason();se.episodes=se.episodes.filter(x=>x.id!==id);save();renderAdmin()}};
+
+/* --- уровень 3: серия → сцены --- */
+function admOneEpisode(){
+ if(nav.sc)return admScene();
+ const s=nStory(),se=nSeason(),ep=nEp();
+ return `<div class="crumb"><b>${esc(s.title)}</b> › ${esc(se.title)} › ${esc(ep.title)}</div>
+  <div class="rowbtns"><button class="btn sm ghost" onclick="goSeasonBack()">‹ К сериям</button>
+   <button class="btn sm" onclick="playEp()">Играть серию</button></div>
+  <div style="font-size:13px;color:var(--muted);margin:14px 0 10px">Сцены (${ep.scenes.length}) · старт: ${ep.start||'—'}</div>
+  ${ep.scenes.map(sc=>`<div class="scard">
+    <div class="lbl">${sc.id}${ep.start===sc.id?'<span class="startpill">старт</span>':''}${sc.speaker?' · '+esc(sc.speaker):''}${sc.bg?' · 🖼':''}</div>
+    <div class="txt">${esc((sc.text||'').slice(0,80))}${(sc.text||'').length>80?'…':''}</div>
+    <div class="ch">${(sc.choices||[]).map(c=>(c.type==='dia'?'💎 ':'▸ ')+esc(c.t)+' → '+tgtLabel(c.go)).join('<br>')||'— конец'}</div>
+    <div class="rowbtns"><button class="btn sm ghost" onclick="goScene('${sc.id}')">Изменить</button>
+     <button class="btn sm ghost" onclick="setStart('${sc.id}')">Старт</button>
+     <button class="btn sm ghost" onclick="rmScene('${sc.id}')">Удалить</button></div></div>`).join('')}
+  <button class="btn" style="margin-top:8px" onclick="addScene()">+ Добавить сцену</button>`;
+}
+window.goSeasonBack=()=>{nav.ep=null;renderAdmin()};
+window.playEp=()=>{DB.active={st:nav.st,se:nav.se,ep:nav.ep};save();node=null;libraryOpen=false;setTab('story')};
+window.addScene=()=>{const ep=nEp();const id='s'+(DB.nsc++);ep.scenes.push({id,speaker:'',illo:'',bg:null,text:'',choices:[]});if(!ep.start)ep.start=id;save();nav.sc=id;renderAdmin()};
+window.goScene=id=>{nav.sc=id;renderAdmin()};
+window.setStart=id=>{nEp().start=id;save();renderAdmin()};
+window.rmScene=id=>{const ep=nEp();ep.scenes=ep.scenes.filter(x=>x.id!==id);if(ep.start===id)ep.start=ep.scenes[0]?ep.scenes[0].id:null;save();renderAdmin()};
+function tgtLabel(go){if(go==='__chat')return 'чат с героем';if(go==='__restart')return 'заново';const sc=nEp().scenes.find(x=>x.id===go);return sc?('«'+(sc.text||sc.id).slice(0,14)+'…»'):'(?)'}
+
+/* --- уровень 4: сцена --- */
+function admScene(){
+ const ep=nEp(),sc=nScene();
+ const opts=`<option value="">— куда ведёт —</option>`+
+  ep.scenes.filter(x=>x.id!==sc.id).map(x=>`<option value="${x.id}">«${esc((x.text||x.id).slice(0,20))}…»</option>`).join('')+
+  `<option value="__chat">→ чат с героем</option><option value="__restart">→ заново</option>`;
+ return `<div class="crumb">${esc(nStory().title)} › ${esc(nEp().title)} › <b>${sc.id}</b></div>
+  <button class="btn sm ghost" onclick="backScene()">‹ К сценам</button>
+  ${sc.bg?`<img class="thumb" src="${sc.bg}" style="margin-top:12px">`:''}
+  <div class="field" style="margin-top:12px"><label>Локация (фон из библиотеки истории)</label><select id="e_loc"><option value="">— без локации —</option>${(nStory().locations||[]).map(l=>`<option value="${l.id}" ${sc.loc===l.id?'selected':''}>${esc(l.name)}</option>`).join('')}</select></div>
+  <div class="field"><label>Или своя картинка сцены (перебивает локацию)</label><input type="file" accept="image/*" onchange="upBg(this)">${sc.bg?'<div class="del" onclick="clrBg()" style="margin-top:6px">убрать картинку</div>':''}</div>
+  <div class="field"><label>Описание арта (если фона нет)</label><input id="e_illo" value="${esc(sc.illo)}" placeholder="дождь, бар, взгляд альфы"></div>
+  <div class="field"><label>Кто говорит (пусто = от автора)</label><input id="e_sp" value="${esc(sc.speaker)}" placeholder="Рэн / ??? / (пусто)"></div>
+  <div class="field"><label>Текст сцены</label><textarea id="e_txt" placeholder="Что происходит…">${esc(sc.text)}</textarea></div>
+  <div class="field"><label>Приписка в конце (напр. «Конец серии»)</label><input id="e_end" value="${esc(sc.endnote||'')}"></div>
+  <div class="field"><label>Действия ГГ (выборы)</label>
+   <div id="choices">${(sc.choices||[]).map((c,i)=>choiceRow(c,i,opts)).join('')}</div>
+   <button class="btn sm ghost" onclick="addChoice()">+ добавить выбор</button></div>
+  <button class="btn" onclick="saveScene()">Сохранить сцену</button>`;
+}
+function choiceRow(c,i,opts){
+ return `<div class="choiceEdit">
+  <input data-ci="${i}" data-k="t" value="${esc(c.t)}" placeholder="текст выбора / действие ГГ">
+  <div class="two">
+   <select data-ci="${i}" data-k="go">${opts.replace(`value="${c.go}"`,`value="${c.go}" selected`)}</select>
+   <select data-ci="${i}" data-k="type"><option value="free" ${c.type!=='dia'?'selected':''}>Бесплатный</option><option value="dia" ${c.type==='dia'?'selected':''}>💎 Алмазный</option></select>
+  </div>
+  <input data-ci="${i}" data-k="cost" value="${c.cost||''}" placeholder="цена в 💎 (для алмазного)" inputmode="numeric">
+  <div class="del" onclick="rmChoice(${i})">удалить выбор</div></div>`;
+}
+window.backScene=()=>{nav.sc=null;renderAdmin()};
+window.upBg=inp=>readImg(inp,d=>{nScene().bg=d;save();renderAdmin()});
+window.clrBg=()=>{nScene().bg=null;save();renderAdmin()};
+window.addChoice=()=>{pullScene();nScene().choices.push({t:'',go:'',type:'free',cost:''});renderAdmin()};
+window.rmChoice=i=>{pullScene();nScene().choices.splice(i,1);renderAdmin()};
+function pullScene(){const sc=nScene();
+ const g=id=>{const e=document.getElementById(id);return e?e.value:undefined};
+ if(g('e_txt')!==undefined){sc.illo=g('e_illo');sc.speaker=g('e_sp');sc.text=g('e_txt');sc.endnote=g('e_end');if(g('e_loc')!==undefined)sc.loc=g('e_loc')}
+ const rows={};document.querySelectorAll('[data-ci]').forEach(el=>{const i=el.dataset.ci;rows[i]=rows[i]||{t:'',go:'',type:'free',cost:''};rows[i][el.dataset.k]=el.value});
+ const keys=Object.keys(rows);if(keys.length)sc.choices=keys.sort((a,b)=>a-b).map(k=>rows[k]);
+}
+window.saveScene=()=>{pullScene();const sc=nScene();sc.choices=(sc.choices||[]).filter(c=>c.t.trim());save();nav.sc=null;renderAdmin()};
+
+/* --- герои --- */
+function admChars(){
+ return `<div class="note">Любовные интересы (не ГГ). Имя, типаж, внешность, первое сообщение.</div>
+  <div class="field"><label>Имя</label><input id="f_name" value="${esc(cform.name)}" placeholder="Лео"></div>
+  <div class="field"><label>Типаж</label><select id="f_arch">${ARCHS.map(a=>`<option ${cform.arch===a?'selected':''}>${a}</option>`).join('')}</select></div>
+  <div class="field"><label>Внешность</label><textarea id="f_look" placeholder="Тёмные волосы, шрам…">${esc(cform.look)}</textarea></div>
+  <div class="field"><label>Первое сообщение</label><textarea id="f_first" placeholder="Я думал о тебе…">${esc(cform.first)}</textarea></div>
+  <button class="btn" onclick="addChar()">Добавить героя</button>
+  <div style="font-size:13px;color:var(--muted);margin:20px 0 10px">Ровстер (${DB.chars.length})</div>
+  ${DB.chars.map(c=>`<div class="guy">${ava(c)}<div style="flex:1"><div class="nm">${esc(c.name)}</div><div class="arch">${esc(c.arch)}</div></div><div class="del" onclick="delChar(${c.id})">удалить</div></div>`).join('')}`;
+}
+function bindAdmin(){
+ const keep=(id,k)=>{const e=document.getElementById(id);if(e&&cform)e.oninput=()=>cform[k]=e.value};
+ keep('f_name','name');keep('f_look','look');keep('f_first','first');
+ const a=document.getElementById('f_arch');if(a&&cform)a.onchange=()=>cform.arch=a.value;
+}
+window.addChar=()=>{if(!cform.name.trim()){alert('Впиши имя');return}
+ const c={id:DB.nc++,name:cform.name.trim(),arch:cform.arch,color:COLORS[DB.chars.length%COLORS.length],look:cform.look.trim()||'(не задано)',first:cform.first.trim()||'Привет…'};
+ DB.chars.push(c);chats[c.id]=[{who:'in',text:c.first}];save();
+ cform={name:'',arch:'Холодный альфа',color:COLORS[0],look:'',first:''};renderAdmin();
+};
+window.delChar=id=>{DB.chars=DB.chars.filter(c=>c.id!==id);delete chats[id];save();renderAdmin()};
+
+/* утилиты */
+function v(id){const e=document.getElementById(id);return e?e.value.trim():''}
+function readImg(inp,cb){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>cb(r.result);r.readAsDataURL(f)}
+
+render();
+
+/* ---------- заставка загрузки ---------- */
+(function(){
+  const fill=document.getElementById('splashFill'), pctEl=document.getElementById('splashPct'),
+        hintEl=document.getElementById('splashHint'), splash=document.getElementById('splash');
+  const hints=["загружаем историю…","готовим локации…","знакомим с героями…","почти готово…"];
+  let pct=0, hi=0;
+  hintEl.textContent=hints[0];
+  const hintTimer=setInterval(()=>{hi=(hi+1)%hints.length;hintEl.textContent=hints[hi]},550);
+  const tick=setInterval(()=>{
+    pct=Math.min(100,pct+(2+Math.random()*6));
+    fill.style.width=pct+'%';
+    pctEl.textContent=Math.floor(pct)+'%';
+    if(pct>=100){
+      clearInterval(tick);clearInterval(hintTimer);
+      setTimeout(()=>{splash.classList.add('hide');setTimeout(()=>splash.remove(),550)},250);
+    }
+  },90);
+})();
+</script>
+</body>
+</html>
