@@ -80,16 +80,17 @@
   .two{display:flex;gap:8px}.two>*{flex:1}
 
   .libtabs{display:flex;gap:6px;margin-bottom:16px}
-  .libtab{flex:1;text-align:center;font-size:12.5px;padding:8px 0;border-radius:20px;border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer}
-  .libtab.on{background:var(--pink);color:#fff;border-color:var(--pink)}
+  .libtab{flex:1;text-align:center;font-size:12.5px;padding:8px 0;border-radius:20px;
+    border:1px solid rgba(255,255,255,.10);background:rgba(28,22,24,.78);color:#9d8f92;cursor:pointer;backdrop-filter:blur(4px)}
+  .libtab.on{background:#7d1524;color:#fff;border-color:#a02030}
   .libgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .libcard{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05);cursor:pointer}
+  .libcard{background:#1c1618;border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.45);cursor:pointer}
   .libcard .libcover{aspect-ratio:9/16;background:linear-gradient(135deg,#534AB7,#D4537E);background-size:cover;background-position:center;position:relative}
   .libcard .libbadge{position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.45);color:#fff;font-size:9.5px;padding:2px 7px;border-radius:8px;font-weight:600}
   .libcard .libbody{padding:10px 11px}
-  .libcard .libname{font-size:13.5px;font-weight:600;margin-bottom:3px}
-  .libcard .libdesc{font-size:11.5px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .libempty{text-align:center;color:var(--muted);font-size:13px;padding:40px 10px}
+  .libcard .libname{font-size:13.5px;font-weight:600;margin-bottom:3px;color:#efe6e8}
+  .libcard .libdesc{font-size:11.5px;color:#93858a;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .libempty{text-align:center;color:#93858a;font-size:13px;padding:40px 10px}
   .libback{font-size:12.5px;color:var(--pink-deep);cursor:pointer;margin-bottom:10px;display:inline-flex;align-items:center;gap:4px;font-weight:600}
 
   .stage{position:relative;border-radius:16px;overflow:hidden;min-height:280px;margin-bottom:14px;
