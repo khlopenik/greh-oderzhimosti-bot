@@ -1,5 +1,6 @@
 import os
 import time
+import urllib.request
 from dotenv import load_dotenv
 from flask import Flask, render_template, make_response
 from telegram import (
@@ -68,10 +69,25 @@ def run_flask():
     flask_app.run(host="0.0.0.0", port=port)
 
 
+def keep_awake():
+    """Render на бесплатном тарифе усыпляет сервис после ~15 мин без запросов,
+    а вместе с ним засыпает и бот. Пингуем сами себя, чтобы не засыпал."""
+    if not APP_URL:
+        return
+    base = APP_URL.rsplit("/app", 1)[0]
+    while True:
+        time.sleep(600)  # каждые 10 минут
+        try:
+            urllib.request.urlopen(base, timeout=30).read(1)
+        except Exception as e:
+            print(f"[keep-awake] пинг не прошёл: {e!r}")
+
+
 def main():
     # веб-часть (Mini App + health-check Render) поднимаем один раз и не трогаем,
     # даже если у бота ниже будут временные проблемы с polling
     threading.Thread(target=run_flask, daemon=True).start()
+    threading.Thread(target=keep_awake, daemon=True).start()
 
     while True:
         try:
