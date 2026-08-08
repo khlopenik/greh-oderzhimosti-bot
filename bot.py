@@ -73,8 +73,8 @@ def run_flask():
 def keep_awake():
     """Render на бесплатном тарифе усыпляет сервис после ~15 мин без запросов,
     а вместе с ним засыпает и бот. Пингуем сами себя, чтобы не засыпал."""
-    if not APP_URL:
-        return
+    if "onrender.com" not in APP_URL:
+        return  # нужно только когда сам сайт живёт на Render
     base = APP_URL.rsplit("/app", 1)[0]
     while True:
         time.sleep(600)  # каждые 10 минут
