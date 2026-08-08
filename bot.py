@@ -1,4 +1,5 @@
 import os
+import time
 from dotenv import load_dotenv
 from flask import Flask, render_template, make_response
 from telegram import (
@@ -68,13 +69,21 @@ def run_flask():
 
 
 def main():
+    # веб-часть (Mini App + health-check Render) поднимаем один раз и не трогаем,
+    # даже если у бота ниже будут временные проблемы с polling
     threading.Thread(target=run_flask, daemon=True).start()
-    app = Application.builder().token(TG_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.Regex("^🔄 Старт$"), on_start_button))
-    app.add_handler(MessageHandler(filters.Regex("^👤 Профиль$"), on_profile_button))
-    print("Бот запущен, жду сообщений...")
-    app.run_polling()
+
+    while True:
+        try:
+            app = Application.builder().token(TG_TOKEN).build()
+            app.add_handler(CommandHandler("start", start))
+            app.add_handler(MessageHandler(filters.Regex("^🔄 Старт$"), on_start_button))
+            app.add_handler(MessageHandler(filters.Regex("^👤 Профиль$"), on_profile_button))
+            print("Бот запущен, жду сообщений...")
+            app.run_polling(drop_pending_updates=True)
+        except Exception as e:
+            print(f"[bot] упал с ошибкой: {e!r}, перезапуск через 5 секунд")
+            time.sleep(5)
 
 
 if __name__ == "__main__":
