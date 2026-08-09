@@ -110,13 +110,20 @@
   .vn{position:fixed;inset:0;z-index:500;overflow:hidden;
     background:#120a14 center/cover no-repeat;background-image:linear-gradient(160deg,#2a1030,#120a14)}
   .vn.hasbg{background-image:none}
-  .vnbg{position:absolute;inset:-10px;background-size:cover;background-position:center;filter:blur(2.5px)}
+  .vnbg{position:absolute;inset:0;background-size:cover;background-position:center}
   .vnchar{position:absolute;bottom:-16%;height:205%;max-width:118%;
     object-fit:contain;pointer-events:none}
   .vnchar.pos-left{left:-6%;object-position:bottom left}
   .vnchar.pos-right{right:-6%;object-position:bottom right}
   .vnback{position:absolute;top:12px;left:12px;z-index:6;width:34px;height:34px;border-radius:50%;
     background:rgba(0,0,0,.45);color:#fff;font-size:20px;line-height:34px;text-align:center;cursor:pointer;backdrop-filter:blur(3px)}
+  .vnicons{position:absolute;top:12px;right:12px;z-index:6;display:flex;gap:8px}
+  .vnicon{width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;font-size:16px;
+    line-height:34px;text-align:center;cursor:pointer;backdrop-filter:blur(3px)}
+  .vnoverlay{position:absolute;inset:0;z-index:20;background:rgba(10,5,8,.72);display:flex;
+    align-items:flex-end;backdrop-filter:blur(2px)}
+  .vnpanel{width:100%;padding:20px 16px 28px;background:rgba(28,14,24,.97);border-top:1px solid rgba(255,255,255,.08)}
+  .vnpanel-title{font-size:16px;font-weight:700;color:#fff;margin-bottom:14px}
   .vnnote{position:absolute;top:14px;left:56px;z-index:6;background:rgba(0,0,0,.45);color:#e7d3d8;
     font-size:11px;padding:6px 10px;border-radius:8px;font-style:italic}
   .vnui{position:absolute;left:0;right:0;bottom:0;z-index:5;padding:0 12px 26px;display:flex;flex-direction:column;gap:9px}
@@ -160,8 +167,6 @@
   <header id="apphead" hidden><h1 id="apptitle">Мои истории</h1></header>
   <div class="tabs" id="apptabs" hidden>
     <div class="tab on" data-t="story">История</div>
-    <div class="tab" data-t="roster">Герои</div>
-    <div class="tab" data-t="blitz">Блиц</div>
     <div class="tab" data-t="admin">Админка</div>
   </div>
   <div class="screen" id="screen"></div>
@@ -173,15 +178,6 @@ const SUPA_URL='https://omiomgwwjuudjqjdggdk.supabase.co';
 const SUPA_KEY='sb_publishable_6HlVMfE2_FxG4uARa5irXw_OrcquxBw';
 const sb=window.supabase.createClient(SUPA_URL,SUPA_KEY);
 let authed=false;
-
-const COLORS=["#D4537E","#534AB7","#1D9E75","#BA7517","#185FA5","#993C1D"];
-const ARCHS=["Холодный альфа","Дерзкий омега","Нежный бета","Нежный принц"];
-const REPLY={
- "Холодный альфа":["Твой запах я ни с чем не спутаю.","Не убегай от меня. Бесполезно.","Ты мой. Привыкай.","...рядом с тобой я забываю держать себя в руках."],
- "Дерзкий омега":["Ой, покраснел? Мило 😏","Не притворяйся, что тебе всё равно.","Сбежим отсюда вдвоём?"],
- "Нежный бета":["Я всегда выслушаю.","Не грусти, я рядом.","С тобой так спокойно…"],
- "Нежный принц":["Ты — самое светлое за неделю.","Расскажи, как прошёл день."],
-};
 
 /* ---------- данные ---------- */
 function seed(){
@@ -351,9 +347,6 @@ async function uploadImg(inp,cb){
  cb(data.publicUrl);
 }
 
-let chats={},openChat=null,met={};
-function initChats(){chats={};DB.chars.forEach(c=>chats[c.id]=[{who:'in',text:c.first}])}
-
 /* ---------- каркас ---------- */
 const screen=document.getElementById('screen');
 let tab='story';
@@ -362,26 +355,21 @@ if(location.hash==='#admin'){
   ['protoflag','apphead','apptabs'].forEach(id=>{const el=document.getElementById(id);if(el)el.hidden=false});
 }
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>setTab(t.dataset.t));
-function setTab(n){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.t===n));tab=n;openChat=null;render()}
-window.switchTab=setTab;
-const byId=id=>DB.chars.find(c=>c.id===id);
+function setTab(n){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.t===n));tab=n;render()}
 const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
-function ava(c,cls=''){return `<div class="ava ${cls}" style="background:${c.color}">${(c.name||'?')[0]}</div>`}
 function getStory(id){return DB.stories.find(s=>s.id===id)}
 function activeEp(){const a=DB.active;const st=getStory(a.st);if(!st)return null;const se=st.seasons.find(x=>x.id===a.se);if(!se)return null;return se.episodes.find(x=>x.id===a.ep)||null}
 
 function render(){
  if(!(tab==='story'&&libraryOpen))screen.style.cssText='';
  if(tab==='story')return renderStory();
- if(tab==='roster')return openChat?renderChat():renderRoster();
- if(tab==='blitz')return renderBlitz();
  if(tab==='admin')return renderAdmin();
 }
 
 /* ---------- библиотека историй ---------- */
 let libraryOpen=true, libTab='new';
 window.libSet=t=>{libTab=t;renderLibrary()};
-window.libOpen=()=>{libraryOpen=true;render()};
+window.libOpen=()=>{libraryOpen=true;overlay=null;render()};
 window.libPlay=id=>{
  const s=getStory(id);
  const prog=DB.progress&&DB.progress[id];
@@ -460,13 +448,33 @@ function renderLibrary(){
 
 /* ---------- проигрывание ---------- */
 let node=null;
+let overlay=null; /* null | 'settings' | 'wardrobe' */
+window.openSettings=()=>{overlay='settings';render()};
+window.openWardrobe=()=>{overlay='wardrobe';render()};
+window.closeOverlay=()=>{overlay=null;render()};
+window.resetEpisodeProgress=()=>{
+ if(!confirm('Начать эту серию заново с самого начала?'))return;
+ overlay=null;restart();
+};
+function overlayHTML(){
+ if(overlay==='settings')return `<div class="vnoverlay" onclick="closeOverlay()"><div class="vnpanel" onclick="event.stopPropagation()">
+   <div class="vnpanel-title">Настройки</div>
+   <div class="vnchoice" onclick="resetEpisodeProgress()"><span>Сбросить прогресс серии</span></div>
+   <div class="vnchoice ghost" onclick="closeOverlay()"><span>Закрыть</span></div>
+ </div></div>`;
+ if(overlay==='wardrobe')return `<div class="vnoverlay" onclick="closeOverlay()"><div class="vnpanel" onclick="event.stopPropagation()">
+   <div class="vnpanel-title">Внешность</div>
+   <div class="note">Скоро здесь можно будет менять причёску и наряд ГГ. Пока раздел в разработке.</div>
+   <div class="vnchoice ghost" onclick="closeOverlay()"><span>Закрыть</span></div>
+ </div></div>`;
+ return '';
+}
 function renderStory(){
  if(libraryOpen)return renderLibrary();
  const ep=activeEp();
  if(!ep||!ep.scenes.length){screen.innerHTML='<div class="libback" onclick="libOpen()">‹ Библиотека</div><div class="note">Нет серий для игры. Собери в Админке и нажми «Играть».</div>';return}
  if(!node)node=ep.start||ep.scenes[0].id;
  const n=ep.scenes.find(s=>s.id===node)||ep.scenes[0];
- DB.chars.forEach(c=>{if(n.speaker===c.name)met[c.id]=true});
  const st=getStory(DB.active.st);
  const loc=(n.loc&&st&&st.locations)?st.locations.find(l=>l.id===n.loc):null;
  const bgUrl=(loc&&loc.bg)?loc.bg:n.bg;
@@ -476,12 +484,18 @@ function renderStory(){
  const idx=ep.scenes.findIndex(x=>x.id===n.id);
  const nextScene=ep.scenes[idx+1];
  const autoNext=choices.length===0&&nextScene;
- const tapThrough = (choices.length===1 && choices[0].t==='Далее' && choices[0].go!=='__chat') || autoNext;
+ const tapThrough = (choices.length===1 && choices[0].t==='Далее') || autoNext;
  const tapTarget = choices.length===1 ? choices[0].go : (autoNext ? nextScene.id : null);
 
  let h=`<div class="vn${bgUrl?' hasbg':''}"${tapThrough?` onclick="goNode('${tapTarget}')"`:''}>`;
  if(bgUrl)h+=`<div class="vnbg" style="background-image:url(${bgUrl})"></div>`;
  h+=`<div class="vnback" onclick="event.stopPropagation();libOpen()">‹</div>`;
+ h+=`<div class="vnicons">
+   <div class="vnicon" onclick="event.stopPropagation();libOpen()" title="В галерею">🏠</div>
+   <div class="vnicon" onclick="event.stopPropagation();openSettings()" title="Настройки">⚙️</div>
+   <div class="vnicon" onclick="event.stopPropagation();openWardrobe()" title="Внешность">👗</div>
+ </div>`;
+ if(overlay)h+=overlayHTML();
  if(!bgUrl&&n.illo)h+=`<div class="vnnote">арт: ${esc(n.illo)}</div>`;
  if(castMember&&castMember.img)h+=`<img class="vnchar ${castMember.gg?'pos-left':'pos-right'}" src="${castMember.img}">`;
 
@@ -500,9 +514,7 @@ function renderStory(){
    h+=`<div class="vnchoice ghost" onclick="event.stopPropagation();libOpen()"><span>Вернуться в галерею</span></div>`;
  } else {
    choices.forEach(c=>{
-    const act = c.go==='__chat' ? `switchTab('roster')`
-              : c.go==='__restart' ? `restart()`
-              : `goNode('${c.go}')`;
+    const act = c.go==='__restart' ? `restart()` : `goNode('${c.go}')`;
     const dia = c.type==='dia';
     h+=`<div class="vnchoice${dia?' dia':''}" onclick="event.stopPropagation();${act}"><span>${dia?`💎 ${c.cost||0} · `:''}${esc(c.t)}</span></div>`;
    });
@@ -513,59 +525,15 @@ function renderStory(){
 window.goNode=id=>{node=id;saveProgress();render()};
 window.restart=()=>{node=activeEp().start;saveProgress();render()};
 
-/* ---------- герои/чат ---------- */
-function renderRoster(){
- screen.innerHTML=`<div class="note">Переписка отдельно от сюжета. Герой открывается, когда встретишь его в истории.</div>`+
-  DB.chars.map(c=>{const m=met[c.id]!==false&&met[c.id]!==undefined?true:met[c.id];const isMet=met[c.id]===true;
-   const last=chats[c.id][chats[c.id].length-1];
-   return `<div class="guy ${isMet?'':'lockrow'}" onclick="${isMet?`open_(${c.id})`:`alert('Встреть ${esc(c.name)} в истории')`}">${ava(c)}
-    <div style="flex:1;min-width:0"><div class="nm">${esc(c.name)} ${isMet?'':'· 🔒'}</div>
-    <div class="arch">${esc(c.arch)}</div><div class="prev">${isMet?esc(last.text):'познакомься в истории'}</div></div>
-    ${isMet&&last.who==='in'?'<div class="dot"></div>':''}</div>`}).join('');
-}
-window.open_=id=>{if(id===null)openChat=null;else{met[id]=true;openChat=id}render()};
-function renderChat(){
- const c=byId(openChat),m=chats[c.id];
- screen.innerHTML=`<div class="chead"><div class="back" onclick="open_(null)">‹</div>${ava(c)}
-   <div><div class="nm">${esc(c.name)}</div><div class="st">в сети</div></div></div>
-   <div class="msgs">${m.map(x=>`<div class="b ${x.who}">${esc(x.text)}</div>`).join('')}</div>
-   <div class="composer"><input id="inp" placeholder="Напиши ${esc(c.name)}…" autocomplete="off"><button class="send" onclick="send()">↑</button></div>`;
- const inp=document.getElementById('inp');inp.focus();inp.onkeydown=e=>{if(e.key==='Enter')send()};screen.scrollTop=1e9;
-}
-window.send=()=>{const c=byId(openChat),inp=document.getElementById('inp'),t=inp.value.trim();if(!t)return;
- chats[c.id].push({who:'out',text:t});inp.value='';renderChat();
- setTimeout(()=>{const p=REPLY[c.arch]||["…"];chats[c.id].push({who:'in',text:p[Math.floor(Math.random()*p.length)]});if(openChat===c.id)renderChat()},700);
-};
-
-/* ---------- блиц ---------- */
-let qi=0,scores={},blitz={};
-const QS=[{q:"Кто цепляет?",opts:[["Властный альфа","Холодный альфа"],["Дерзкий омега","Дерзкий омега"]]},
- {q:"Идеальный вечер?",opts:[["Опасное притяжение","Холодный альфа"],["Драйв","Дерзкий омега"]]}];
-function renderBlitz(){
- if(blitz.done){const c=blitz.c;screen.innerHTML=`<div class="match">${ava(c)}
-   <div style="font-size:13px;color:var(--muted);margin-bottom:4px">твой герой</div>
-   <div style="font-size:22px;font-weight:600">${esc(c.name)}</div><div class="arch" style="margin:8px 0 16px;display:inline-block">${esc(c.arch)}</div>
-   <div class="note" style="text-align:left">${esc(c.look)}</div>
-   <button class="btn" onclick="open_(${c.id});switchTab('roster')">В чат</button>
-   <button class="btn ghost" style="margin-top:8px" onclick="reblitz()">Заново</button></div>`;return}
- const cur=QS[qi];screen.innerHTML=`<div class="q">${qi+1}/${QS.length} · ${cur.q}</div>`+cur.opts.map(o=>`<div class="opt" onclick="pick('${o[1]}')">${o[0]}</div>`).join('');
-}
-window.pick=a=>{scores[a]=(scores[a]||0)+1;qi++;if(qi>=QS.length){const b=Object.keys(scores).sort((x,y)=>scores[y]-scores[x])[0];const p=DB.chars.filter(c=>c.arch===b);blitz={done:1,c:p.length?p[0]:DB.chars[0]}}render()};
-window.reblitz=()=>{qi=0;scores={};blitz={};render()};
-
 /* ================= АДМИНКА ================= */
-let aTab='stories', nav={st:null,se:null,ep:null,sc:null}, cform=null, showNew=false;
+let nav={st:null,se:null,ep:null,sc:null}, showNew=false;
 const epCount=s=>s.seasons.reduce((a,se)=>a+se.episodes.length,0);
 window.toggleNew=()=>{showNew=!showNew;renderAdmin()};
 function renderAdmin(){
  if(!authed){screen.innerHTML=admLogin();return}
  if(quickPanel){screen.innerHTML=admQuickPanel();return}
- screen.innerHTML=`<div class="two" style="margin-bottom:14px">
-   <button class="btn sm ${aTab==='stories'?'':'ghost'}" onclick="aSet('stories')">Истории</button>
-   <button class="btn sm ${aTab==='chars'?'':'ghost'}" onclick="aSet('chars')">Герои</button></div>`+
-   (aTab==='stories'?admStories():admChars())+
+ screen.innerHTML=admStories()+
    `<button class="btn sm ghost" style="margin-top:24px" onclick="adminLogout()">Выйти из админки</button>`;
- bindAdmin();
 }
 function admLogin(){
  return `<div class="note">Читать истории может кто угодно, а редактировать — только после входа.</div>
@@ -581,7 +549,6 @@ window.adminLogin=async()=>{
  authed=true;renderAdmin();
 };
 window.adminLogout=async()=>{await sb.auth.signOut();authed=false;renderAdmin()};
-window.aSet=t=>{aTab=t;nav={st:null,se:null,ep:null,sc:null};if(t==='chars'&&!cform)cform={name:'',arch:'Холодный альфа',color:COLORS[0],look:'',first:''};renderAdmin()};
 
 const nStory=()=>getStory(nav.st);
 const nSeason=()=>{const s=nStory();return s&&s.seasons.find(x=>x.id===nav.se)};
@@ -757,14 +724,14 @@ window.addScene=()=>{const ep=nEp();const id='s'+(DB.nsc++);ep.scenes.push({id,s
 window.goScene=id=>{nav.sc=id;renderAdmin()};
 window.setStart=id=>{nEp().start=id;save();renderAdmin()};
 window.rmScene=id=>{const ep=nEp();ep.scenes=ep.scenes.filter(x=>x.id!==id);if(ep.start===id)ep.start=ep.scenes[0]?ep.scenes[0].id:null;save();renderAdmin()};
-function tgtLabel(go){if(go==='__chat')return 'чат с героем';if(go==='__restart')return 'заново';const sc=nEp().scenes.find(x=>x.id===go);return sc?('«'+(sc.text||sc.id).slice(0,14)+'…»'):'(?)'}
+function tgtLabel(go){if(go==='__restart')return 'заново';const sc=nEp().scenes.find(x=>x.id===go);return sc?('«'+(sc.text||sc.id).slice(0,14)+'…»'):'(?)'}
 
 /* --- уровень 4: сцена --- */
 function admScene(){
  const ep=nEp(),sc=nScene();
  const opts=`<option value="">— куда ведёт —</option>`+
   ep.scenes.filter(x=>x.id!==sc.id).map(x=>`<option value="${x.id}">«${esc((x.text||x.id).slice(0,20))}…»</option>`).join('')+
-  `<option value="__chat">→ чат с героем</option><option value="__restart">→ заново</option>`;
+  `<option value="__restart">→ заново</option>`;
  return `<div class="crumb">${esc(nStory().title)} › ${esc(nEp().title)} › <b>${sc.id}</b></div>
   <button class="btn sm ghost" onclick="backScene()">‹ К сценам</button>
   ${quickBar()}
@@ -803,28 +770,6 @@ function pullScene(){const sc=nScene();
 }
 window.saveScene=()=>{pullScene();const sc=nScene();sc.choices=(sc.choices||[]).filter(c=>c.t.trim());save();nav.sc=null;renderAdmin()};
 
-/* --- герои --- */
-function admChars(){
- return `<div class="note">Любовные интересы (не ГГ). Имя, типаж, внешность, первое сообщение.</div>
-  <div class="field"><label>Имя</label><input id="f_name" value="${esc(cform.name)}" placeholder="Лео"></div>
-  <div class="field"><label>Типаж</label><select id="f_arch">${ARCHS.map(a=>`<option ${cform.arch===a?'selected':''}>${a}</option>`).join('')}</select></div>
-  <div class="field"><label>Внешность</label><textarea id="f_look" placeholder="Тёмные волосы, шрам…">${esc(cform.look)}</textarea></div>
-  <div class="field"><label>Первое сообщение</label><textarea id="f_first" placeholder="Я думал о тебе…">${esc(cform.first)}</textarea></div>
-  <button class="btn" onclick="addChar()">Добавить героя</button>
-  <div style="font-size:13px;color:var(--muted);margin:20px 0 10px">Ровстер (${DB.chars.length})</div>
-  ${DB.chars.map(c=>`<div class="guy">${ava(c)}<div style="flex:1"><div class="nm">${esc(c.name)}</div><div class="arch">${esc(c.arch)}</div></div><div class="del" onclick="delChar(${c.id})">удалить</div></div>`).join('')}`;
-}
-function bindAdmin(){
- const keep=(id,k)=>{const e=document.getElementById(id);if(e&&cform)e.oninput=()=>cform[k]=e.value};
- keep('f_name','name');keep('f_look','look');keep('f_first','first');
- const a=document.getElementById('f_arch');if(a&&cform)a.onchange=()=>cform.arch=a.value;
-}
-window.addChar=()=>{if(!cform.name.trim()){alert('Впиши имя');return}
- const c={id:DB.nc++,name:cform.name.trim(),arch:cform.arch,color:COLORS[DB.chars.length%COLORS.length],look:cform.look.trim()||'(не задано)',first:cform.first.trim()||'Привет…'};
- DB.chars.push(c);chats[c.id]=[{who:'in',text:c.first}];save();
- cform={name:'',arch:'Холодный альфа',color:COLORS[0],look:'',first:''};renderAdmin();
-};
-window.delChar=id=>{DB.chars=DB.chars.filter(c=>c.id!==id);delete chats[id];save();renderAdmin()};
 
 /* утилиты */
 function v(id){const e=document.getElementById(id);return e?e.value.trim():''}
@@ -839,7 +784,6 @@ async function bootDB(){
    await loadDB();
    try{DB.progress=JSON.parse(localStorage.getItem('gr_progress'))||{}}catch(e){DB.progress={}}
  }catch(e){console.error('Не удалось загрузить базу из Supabase:',e)}
- initChats();
  render();
  window.__dbReady=true;
 }
