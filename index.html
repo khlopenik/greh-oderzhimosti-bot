@@ -85,7 +85,8 @@
   .libtab.on{background:#7d1524;color:#fff;border-color:#a02030}
   .libgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   .libcard{background:#1c1618;border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.45);cursor:pointer}
-  .libcard .libcover{aspect-ratio:9/16;background:linear-gradient(135deg,#534AB7,#D4537E);background-size:cover;background-position:center;position:relative}
+  .libcard .libcover{position:relative;background:linear-gradient(135deg,#534AB7,#D4537E);min-height:170px}
+  .libcard .libcover img{display:block;width:100%;height:auto}
   .libcard .libbadge{position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.45);color:#fff;font-size:9.5px;padding:2px 7px;border-radius:8px;font-weight:600}
   .libcard .libbody{padding:10px 11px}
   .libcard .libname{font-size:13.5px;font-weight:600;margin-bottom:3px;color:#efe6e8}
@@ -97,19 +98,17 @@
   .vn{position:fixed;inset:0;z-index:500;overflow:hidden;
     background:#120a14 center/cover no-repeat;background-image:linear-gradient(160deg,#2a1030,#120a14)}
   .vn.hasbg{background-image:none}
-  .vnbg{position:absolute;inset:0;background-size:cover;background-position:center}
-  .vnchar{position:absolute;bottom:0;left:50%;transform:translateX(-50%);height:100%;
-    object-fit:contain;object-position:bottom;pointer-events:none}
+  .vnbg{position:absolute;inset:-10px;background-size:cover;background-position:center;filter:blur(2.5px)}
+  .vnchar{position:absolute;bottom:-4%;left:2%;height:118%;max-width:78%;
+    object-fit:contain;object-position:bottom left;pointer-events:none}
   .vnback{position:absolute;top:12px;left:12px;z-index:6;width:34px;height:34px;border-radius:50%;
     background:rgba(0,0,0,.45);color:#fff;font-size:20px;line-height:34px;text-align:center;cursor:pointer;backdrop-filter:blur(3px)}
   .vnnote{position:absolute;top:14px;left:56px;z-index:6;background:rgba(0,0,0,.45);color:#e7d3d8;
     font-size:11px;padding:6px 10px;border-radius:8px;font-style:italic}
-  .vnui{position:absolute;left:0;right:0;bottom:0;z-index:5;padding:0 12px 20px;display:flex;flex-direction:column;gap:9px}
-  .vntab{align-self:flex-start;margin-left:16px;margin-bottom:-7px;position:relative;z-index:2;
-    padding:2px;background:linear-gradient(120deg,#ff2f8e,#ffc74d);
-    clip-path:polygon(9px 0,100% 0,calc(100% - 9px) 100%,0 100%);filter:drop-shadow(0 0 5px rgba(255,47,142,.65))}
-  .vntab span{display:block;padding:5px 20px 6px;background:#7a1652;color:#fff;font-size:13.5px;font-weight:600;
-    clip-path:polygon(9px 0,100% 0,calc(100% - 9px) 100%,0 100%)}
+  .vnui{position:absolute;left:0;right:0;bottom:0;z-index:5;padding:0 12px 26px;display:flex;flex-direction:column;gap:9px}
+  .vntab{align-self:flex-start;margin-left:18px;margin-bottom:-11px;position:relative;z-index:2}
+  .vntab span{display:block;padding:7px 22px;border-radius:10px 10px 0 0;background:linear-gradient(100deg,#8a1a6e,#c22a6e);
+    color:#fff;font-size:13.5px;font-weight:700;letter-spacing:.2px;box-shadow:0 -2px 10px rgba(255,47,142,.35)}
   .vnbox{padding:2px;background:linear-gradient(135deg,#ff2f8e 0%,#ff5ea8 45%,#ffc74d 100%);
     clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px);
     filter:drop-shadow(0 0 7px rgba(255,47,142,.55))}
@@ -124,6 +123,8 @@
     clip-path:polygon(11px 0,100% 0,100% calc(100% - 11px),calc(100% - 11px) 100%,0 100%,0 11px)}
   .vnchoice:active span{background:rgba(170,36,150,.95)}
   .vnchoice.dia span{background:rgba(150,90,20,.92)}
+  .vnchoice.ghost span{background:rgba(30,20,26,.75);border:1px solid rgba(255,255,255,.18)}
+  .vntap{align-self:center;color:rgba(255,255,255,.55);font-size:12px;font-style:italic;padding-top:2px}
 
   #splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
     background:#0a0505 url(static/bg/app-splash.png) center/cover no-repeat;color:#fff;transition:opacity .5s ease;padding:24px;padding-bottom:11%;text-align:center}
@@ -209,7 +210,7 @@ function seed(){
   S("s28","Ты вообще-то красивая, не парься.",[{t:"Далее",go:"s29",type:"free"}],{speaker:"Итан",loc:"l7"}),
 
   S("s29","Титры: «Первая пара — Далтон и Вивьен. Вторая пара — Симона и Итан.»",[{t:"Далее",go:"s30",type:"free"}],{illo:"титры серии"}),
-  S("s30","Наверное, вам интересно, как мы вообще до этого докатились...",[{t:"Написать Итану",go:"__chat",type:"free"},{t:"Пройти заново",go:"__restart",type:"free"}],{speaker:"Симона",endnote:"Конец пролога. Дальше начинается сама история на шоу."}),
+  S("s30","Наверное, вам интересно, как мы вообще до этого докатились...",[],{speaker:"Симона",endnote:"Конец пролога. Дальше начинается сама история на шоу."}),
  ]};
  const story={id:1,title:"Разлучники",genre:"драма · реалити-шоу · романтика",cover:I+"razluchniki-cover.png",
   desc:"Симона узнаёт, что её парень изменил ей с девушкой Итана — и теперь эти двое идут на шоу «Разлучники» испытывать чувства. Симона предлагает Итану объединиться и разбить предателей изнутри.",
@@ -288,15 +289,39 @@ let libraryOpen=true, libTab='new';
 window.libSet=t=>{libTab=t;renderLibrary()};
 window.libOpen=()=>{libraryOpen=true;render()};
 window.libPlay=id=>{
- const s=getStory(id);const se=s.seasons[0];const ep=se&&se.episodes[0];
+ const s=getStory(id);
+ const prog=DB.progress&&DB.progress[id];
+ let se=prog&&s.seasons.find(x=>x.id===prog.se);
+ let ep=se&&se.episodes.find(x=>x.id===prog.ep);
+ if(!se||!ep||!ep.scenes.length){se=s.seasons[0];ep=se&&se.episodes[0]}
  if(!ep||!ep.scenes.length){alert('В этой истории пока нет доступных серий.');return}
- DB.active={st:id,se:se.id,ep:ep.id};node=null;libraryOpen=false;save();render();
+ DB.active={st:id,se:se.id,ep:ep.id};
+ node=(prog&&prog.ep===ep.id)?prog.node:null;
+ libraryOpen=false;saveProgress();render();
+};
+function saveProgress(){
+ if(!DB.progress)DB.progress={};
+ DB.progress[DB.active.st]={se:DB.active.se,ep:DB.active.ep,node};
+ save();
+}
+function nextEpisodeInfo(){
+ const st=getStory(DB.active.st);
+ const se=st&&st.seasons.find(x=>x.id===DB.active.se);
+ if(!se)return null;
+ const idx=se.episodes.findIndex(e=>e.id===DB.active.ep);
+ const nxt=se.episodes[idx+1];
+ return (nxt&&nxt.scenes.length)?{se:se.id,ep:nxt.id}:null;
+}
+window.continueStory=()=>{
+ const nxt=nextEpisodeInfo();
+ if(nxt){DB.active.se=nxt.se;DB.active.ep=nxt.ep;node=null;saveProgress();render()}
+ else{restart()}
 };
 function libCard(s){
- const cover=s.cover?`style="background-image:url(${s.cover})"`:'';
+ const cover=s.cover?`<img src="${s.cover}">`:'';
  const ready=s.seasons.some(se=>se.episodes.some(e=>e.scenes.length));
  return `<div class="libcard" onclick="libPlay(${s.id})">
-   <div class="libcover" ${cover}><span class="libbadge">${ready?'Играть':'Скоро'}</span></div>
+   <div class="libcover">${cover}<span class="libbadge">${ready?'Играть':'Скоро'}</span></div>
    <div class="libbody"><div class="libname">${esc(s.title)}</div>
     <div class="libdesc">${esc(s.desc||'Описание скоро появится…')}</div></div></div>`;
 }
@@ -327,9 +352,12 @@ function renderStory(){
  const bgUrl=(loc&&loc.bg)?loc.bg:n.bg;
  const castMember=(n.speaker&&st&&st.cast)?st.cast.find(c=>c.name===n.speaker):null;
 
- let h=`<div class="vn${bgUrl?' hasbg':''}">`;
+ const choices=n.choices||[];
+ const tapThrough = choices.length===1 && choices[0].t==='Далее' && choices[0].go!=='__chat';
+
+ let h=`<div class="vn${bgUrl?' hasbg':''}"${tapThrough?` onclick="goNode('${choices[0].go}')"`:''}>`;
  if(bgUrl)h+=`<div class="vnbg" style="background-image:url(${bgUrl})"></div>`;
- h+=`<div class="vnback" onclick="libOpen()">‹</div>`;
+ h+=`<div class="vnback" onclick="event.stopPropagation();libOpen()">‹</div>`;
  if(!bgUrl&&n.illo)h+=`<div class="vnnote">арт: ${esc(n.illo)}</div>`;
  if(castMember&&castMember.img)h+=`<img class="vnchar" src="${castMember.img}">`;
 
@@ -339,20 +367,27 @@ function renderStory(){
  if(n.endnote)h+=`<div class="vnend">${esc(n.endnote)}</div>`;
  h+=`</div></div>`;
 
- (n.choices||[]).forEach(c=>{
-  const act = c.go==='__chat' ? `switchTab('roster')`
-            : c.go==='__restart' ? `restart()`
-            : `goNode('${c.go}')`;
-  const dia = c.type==='dia';
-  h+=`<div class="vnchoice${dia?' dia':''}" onclick="${act}"><span>${dia?`💎 ${c.cost||0} · `:''}${esc(c.t)}</span></div>`;
- });
- if(!n.choices||!n.choices.length)
-   h+=`<div class="vnchoice" onclick="restart()"><span>Пройти заново</span></div>`;
+ if(tapThrough){
+   h+=`<div class="vntap">тронь экран, чтобы продолжить ›</div>`;
+ } else if(!choices.length){
+   /* конец серии — итоговый экран */
+   const hasNext=!!nextEpisodeInfo();
+   h+=`<div class="vnchoice" onclick="event.stopPropagation();continueStory()"><span>${hasNext?'Продолжить':'Пройти заново'}</span></div>`;
+   h+=`<div class="vnchoice ghost" onclick="event.stopPropagation();libOpen()"><span>Вернуться в галерею</span></div>`;
+ } else {
+   choices.forEach(c=>{
+    const act = c.go==='__chat' ? `switchTab('roster')`
+              : c.go==='__restart' ? `restart()`
+              : `goNode('${c.go}')`;
+    const dia = c.type==='dia';
+    h+=`<div class="vnchoice${dia?' dia':''}" onclick="event.stopPropagation();${act}"><span>${dia?`💎 ${c.cost||0} · `:''}${esc(c.t)}</span></div>`;
+   });
+ }
  h+=`</div></div>`;
  screen.innerHTML=h;screen.scrollTop=0;
 }
-window.goNode=id=>{node=id;render()};
-window.restart=()=>{node=activeEp().start;render()};
+window.goNode=id=>{node=id;saveProgress();render()};
+window.restart=()=>{node=activeEp().start;saveProgress();render()};
 
 /* ---------- герои/чат ---------- */
 function renderRoster(){
