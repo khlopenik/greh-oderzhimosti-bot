@@ -821,6 +821,7 @@ window.delChar=id=>{DB.chars=DB.chars.filter(c=>c.id!==id);delete chats[id];save
 /* утилиты */
 function v(id){const e=document.getElementById(id);return e?e.value.trim():''}
 
+window.__dbReady=false;
 async function bootDB(){
  try{
    const {data:{session}}=await sb.auth.getSession();
@@ -832,10 +833,11 @@ async function bootDB(){
  }catch(e){console.error('Не удалось загрузить базу из Supabase:',e)}
  initChats();
  render();
+ window.__dbReady=true;
 }
 bootDB();
 
-/* ---------- заставка загрузки ---------- */
+/* ---------- заставка загрузки: не гаснет, пока реально не загружены данные ---------- */
 (function(){
   const fill=document.getElementById('splashFill'), pctEl=document.getElementById('splashPct'),
         hintEl=document.getElementById('splashHint'), splash=document.getElementById('splash');
@@ -844,7 +846,8 @@ bootDB();
   hintEl.textContent=hints[0];
   const hintTimer=setInterval(()=>{hi=(hi+1)%hints.length;hintEl.textContent=hints[hi]},550);
   const tick=setInterval(()=>{
-    pct=Math.min(100,pct+(2+Math.random()*6));
+    const cap=window.__dbReady?100:92;
+    pct=Math.min(cap,pct+(2+Math.random()*6));
     fill.style.width=pct+'%';
     pctEl.textContent=Math.floor(pct)+'%';
     if(pct>=100){
