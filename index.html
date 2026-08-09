@@ -111,8 +111,10 @@
     background:#120a14 center/cover no-repeat;background-image:linear-gradient(160deg,#2a1030,#120a14)}
   .vn.hasbg{background-image:none}
   .vnbg{position:absolute;inset:-10px;background-size:cover;background-position:center;filter:blur(2.5px)}
-  .vnchar{position:absolute;bottom:-16%;left:-4%;height:195%;max-width:112%;
-    object-fit:contain;object-position:bottom left;pointer-events:none}
+  .vnchar{position:absolute;bottom:-16%;height:205%;max-width:118%;
+    object-fit:contain;pointer-events:none}
+  .vnchar.pos-left{left:-6%;object-position:bottom left}
+  .vnchar.pos-right{right:-6%;object-position:bottom right}
   .vnback{position:absolute;top:12px;left:12px;z-index:6;width:34px;height:34px;border-radius:50%;
     background:rgba(0,0,0,.45);color:#fff;font-size:20px;line-height:34px;text-align:center;cursor:pointer;backdrop-filter:blur(3px)}
   .vnnote{position:absolute;top:14px;left:56px;z-index:6;background:rgba(0,0,0,.45);color:#e7d3d8;
@@ -291,7 +293,7 @@ async function loadDB(){
    id:s.id,title:s.title,genre:s.genre,cover:s.cover_url,desc:s.description,
    gg:{name:s.gg_name,desc:s.gg_desc},
    locations:(locs||[]).map(l=>({id:l.id,name:l.name,bg:l.bg_url})),
-   cast:(cast||[]).map(c=>({id:c.id,name:c.name,img:c.img_url})),
+   cast:(cast||[]).map(c=>({id:c.id,name:c.name,img:c.img_url,gg:!!c.gg})),
    seasons:seasonsOut,
   });
  }
@@ -305,7 +307,7 @@ async function save(){
    await sb.from('gr_locations').delete().eq('story_id',s.id);
    if(s.locations.length)await sb.from('gr_locations').insert(s.locations.map(l=>({id:l.id,story_id:s.id,name:l.name,bg_url:l.bg})));
    await sb.from('gr_cast').delete().eq('story_id',s.id);
-   if(s.cast.length)await sb.from('gr_cast').insert(s.cast.map(c=>({id:c.id,story_id:s.id,name:c.name,img_url:c.img})));
+   if(s.cast.length)await sb.from('gr_cast').insert(s.cast.map(c=>({id:c.id,story_id:s.id,name:c.name,img_url:c.img,gg:!!c.gg})));
 
    const {data:oldSeasons}=await sb.from('gr_seasons').select('id').eq('story_id',s.id);
    const keepSe=s.seasons.map(se=>se.id);
@@ -471,13 +473,17 @@ function renderStory(){
  const castMember=(n.speaker&&st&&st.cast)?st.cast.find(c=>c.name===n.speaker):null;
 
  const choices=n.choices||[];
- const tapThrough = choices.length===1 && choices[0].t==='Далее' && choices[0].go!=='__chat';
+ const idx=ep.scenes.findIndex(x=>x.id===n.id);
+ const nextScene=ep.scenes[idx+1];
+ const autoNext=choices.length===0&&nextScene;
+ const tapThrough = (choices.length===1 && choices[0].t==='Далее' && choices[0].go!=='__chat') || autoNext;
+ const tapTarget = choices.length===1 ? choices[0].go : (autoNext ? nextScene.id : null);
 
- let h=`<div class="vn${bgUrl?' hasbg':''}"${tapThrough?` onclick="goNode('${choices[0].go}')"`:''}>`;
+ let h=`<div class="vn${bgUrl?' hasbg':''}"${tapThrough?` onclick="goNode('${tapTarget}')"`:''}>`;
  if(bgUrl)h+=`<div class="vnbg" style="background-image:url(${bgUrl})"></div>`;
  h+=`<div class="vnback" onclick="event.stopPropagation();libOpen()">‹</div>`;
  if(!bgUrl&&n.illo)h+=`<div class="vnnote">арт: ${esc(n.illo)}</div>`;
- if(castMember&&castMember.img)h+=`<img class="vnchar" src="${castMember.img}">`;
+ if(castMember&&castMember.img)h+=`<img class="vnchar ${castMember.gg?'pos-left':'pos-right'}" src="${castMember.img}">`;
 
  h+=`<div class="vnui">`;
  h+=`<div class="vntab"><span>${n.speaker?esc(n.speaker):'…'}</span></div>`;
@@ -627,9 +633,10 @@ function locsBlock(s){
   <button class="btn ghost" onclick="addLoc()">+ Добавить локацию</button>`;
 }
 function castBlock(s){
- return `<div style="font-size:13px;color:var(--muted);margin:20px 0 10px">Действующие лица (${s.cast.length}) — портреты на прозрачном фоне, показываются поверх фона сцены, когда имя в поле «Кто говорит» совпадает с именем здесь</div>
+ return `<div style="font-size:13px;color:var(--muted);margin:20px 0 10px">Действующие лица (${s.cast.length}) — портреты на прозрачном фоне, показываются поверх фона сцены, когда имя в поле «Кто говорит» совпадает с именем здесь. Отметь галочкой ГГ (от кого играем) — её портрет всегда будет слева, остальные — справа</div>
   ${s.cast.map(c=>`<div class="row">${c.img?`<img src="${c.img}" style="width:46px;height:46px;object-fit:cover;border-radius:8px">`:'<div style="width:46px;height:46px;border-radius:8px;background:var(--purple-soft)"></div>'}
     <div class="rt"><div>${esc(c.name)}</div><div class="m">${c.img?'портрет загружен':'нет портрета'}</div></div>
+    <label class="btn sm ghost" style="cursor:pointer;${c.gg?'background:var(--pink);color:#fff':''}"><input type="checkbox" ${c.gg?'checked':''} style="margin-right:4px" onchange="setGG('${c.id}')">ГГ</label>
     <label class="btn sm ghost" style="cursor:pointer">Портрет<input type="file" accept="image/*" style="display:none" onchange="upCast(this,'${c.id}')"></label>
     <span class="del" onclick="rmCast('${c.id}')">✕</span></div>`).join('')}
   <div class="field" style="margin-top:8px"><input id="ns_cast" placeholder="Имя персонажа (Итан) — как в поле «Кто говорит»"></div>
@@ -702,6 +709,7 @@ window.addCast=()=>{
 };
 window.upCast=(inp,id)=>uploadImg(inp,url=>{const c=nStory().cast.find(x=>x.id===id);if(c){c.img=url;save();renderAdmin()}});
 window.rmCast=id=>{const s=nStory();s.cast=s.cast.filter(x=>x.id!==id);save();renderAdmin()};
+window.setGG=id=>{const s=nStory();s.cast.forEach(c=>c.gg=(c.id===id&&!c.gg));save();renderAdmin()};
 window.addSeason=()=>{const t=v('ns_se')||('Сезон '+(nStory().seasons.length+1));nStory().seasons.push({id:'se'+(DB.nse++),title:t,episodes:[]});save();renderAdmin()};
 window.goSeason=id=>{nav.se=id;nav.ep=null;renderAdmin()};
 window.rmSeason=id=>{if(confirm('Удалить сезон?')){const s=nStory();s.seasons=s.seasons.filter(x=>x.id!==id);save();renderAdmin()}};
