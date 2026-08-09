@@ -169,7 +169,7 @@
 <script>
 const SUPA_URL='https://omiomgwwjuudjqjdggdk.supabase.co';
 const SUPA_KEY='sb_publishable_6HlVMfE2_FxG4uARa5irXw_OrcquxBw';
-const supabase=window.supabase.createClient(SUPA_URL,SUPA_KEY);
+const sb=window.supabase.createClient(SUPA_URL,SUPA_KEY);
 let authed=false;
 
 const COLORS=["#D4537E","#534AB7","#1D9E75","#BA7517","#185FA5","#993C1D"];
@@ -260,24 +260,24 @@ function seed(){
 let DB={chars:[],stories:[],active:{st:1,se:'se1',ep:'e1'},nc:1,ns:2,nse:2,nep:2,nsc:1,nloc:1,ncast:1};
 
 async function loadDB(){
- const {data:stories}=await supabase.from('gr_stories').select('*').order('id');
+ const {data:stories}=await sb.from('gr_stories').select('*').order('id');
  const out=[];
  for(const s of (stories||[])){
   const [{data:locs},{data:cast},{data:seasons}]=await Promise.all([
-   supabase.from('gr_locations').select('*').eq('story_id',s.id),
-   supabase.from('gr_cast').select('*').eq('story_id',s.id),
-   supabase.from('gr_seasons').select('*').eq('story_id',s.id).order('ord'),
+   sb.from('gr_locations').select('*').eq('story_id',s.id),
+   sb.from('gr_cast').select('*').eq('story_id',s.id),
+   sb.from('gr_seasons').select('*').eq('story_id',s.id).order('ord'),
   ]);
   const seasonsOut=[];
   for(const se of (seasons||[])){
-   const {data:episodes}=await supabase.from('gr_episodes').select('*').eq('season_id',se.id).order('ord');
+   const {data:episodes}=await sb.from('gr_episodes').select('*').eq('season_id',se.id).order('ord');
    const episodesOut=[];
    for(const ep of (episodes||[])){
-    const {data:scenes}=await supabase.from('gr_scenes').select('*').eq('episode_id',ep.id).order('ord');
+    const {data:scenes}=await sb.from('gr_scenes').select('*').eq('episode_id',ep.id).order('ord');
     const sceneIds=(scenes||[]).map(sc=>sc.id);
     let choicesByScene={};
     if(sceneIds.length){
-     const {data:choices}=await supabase.from('gr_choices').select('*').in('scene_id',sceneIds).order('ord');
+     const {data:choices}=await sb.from('gr_choices').select('*').in('scene_id',sceneIds).order('ord');
      (choices||[]).forEach(c=>{(choicesByScene[c.scene_id]=choicesByScene[c.scene_id]||[]).push({t:c.txt,go:c.go,type:c.ctype,cost:c.cost})});
     }
     episodesOut.push({id:ep.id,title:ep.title,start:ep.start_scene,scenes:(scenes||[]).map(sc=>({
@@ -301,37 +301,37 @@ async function loadDB(){
 async function save(){
  try{
   for(const s of DB.stories){
-   await supabase.from('gr_stories').upsert({id:s.id,title:s.title,genre:s.genre,cover_url:s.cover,description:s.desc,gg_name:s.gg.name,gg_desc:s.gg.desc});
-   await supabase.from('gr_locations').delete().eq('story_id',s.id);
-   if(s.locations.length)await supabase.from('gr_locations').insert(s.locations.map(l=>({id:l.id,story_id:s.id,name:l.name,bg_url:l.bg})));
-   await supabase.from('gr_cast').delete().eq('story_id',s.id);
-   if(s.cast.length)await supabase.from('gr_cast').insert(s.cast.map(c=>({id:c.id,story_id:s.id,name:c.name,img_url:c.img})));
+   await sb.from('gr_stories').upsert({id:s.id,title:s.title,genre:s.genre,cover_url:s.cover,description:s.desc,gg_name:s.gg.name,gg_desc:s.gg.desc});
+   await sb.from('gr_locations').delete().eq('story_id',s.id);
+   if(s.locations.length)await sb.from('gr_locations').insert(s.locations.map(l=>({id:l.id,story_id:s.id,name:l.name,bg_url:l.bg})));
+   await sb.from('gr_cast').delete().eq('story_id',s.id);
+   if(s.cast.length)await sb.from('gr_cast').insert(s.cast.map(c=>({id:c.id,story_id:s.id,name:c.name,img_url:c.img})));
 
-   const {data:oldSeasons}=await supabase.from('gr_seasons').select('id').eq('story_id',s.id);
+   const {data:oldSeasons}=await sb.from('gr_seasons').select('id').eq('story_id',s.id);
    const keepSe=s.seasons.map(se=>se.id);
-   for(const os of (oldSeasons||[]))if(!keepSe.includes(os.id))await supabase.from('gr_seasons').delete().eq('id',os.id);
+   for(const os of (oldSeasons||[]))if(!keepSe.includes(os.id))await sb.from('gr_seasons').delete().eq('id',os.id);
 
    for(const [si,se] of s.seasons.entries()){
-    await supabase.from('gr_seasons').upsert({id:se.id,story_id:s.id,title:se.title,ord:si});
+    await sb.from('gr_seasons').upsert({id:se.id,story_id:s.id,title:se.title,ord:si});
 
-    const {data:oldEps}=await supabase.from('gr_episodes').select('id').eq('season_id',se.id);
+    const {data:oldEps}=await sb.from('gr_episodes').select('id').eq('season_id',se.id);
     const keepEp=se.episodes.map(ep=>ep.id);
-    for(const oe of (oldEps||[]))if(!keepEp.includes(oe.id))await supabase.from('gr_episodes').delete().eq('id',oe.id);
+    for(const oe of (oldEps||[]))if(!keepEp.includes(oe.id))await sb.from('gr_episodes').delete().eq('id',oe.id);
 
     for(const [ei,ep] of se.episodes.entries()){
-     await supabase.from('gr_episodes').upsert({id:ep.id,season_id:se.id,title:ep.title,start_scene:ep.start,ord:ei});
+     await sb.from('gr_episodes').upsert({id:ep.id,season_id:se.id,title:ep.title,start_scene:ep.start,ord:ei});
 
-     const {data:oldScenes}=await supabase.from('gr_scenes').select('id').eq('episode_id',ep.id);
+     const {data:oldScenes}=await sb.from('gr_scenes').select('id').eq('episode_id',ep.id);
      const keepSc=ep.scenes.map(sc=>sc.id);
-     for(const osc of (oldScenes||[]))if(!keepSc.includes(osc.id))await supabase.from('gr_scenes').delete().eq('id',osc.id);
+     for(const osc of (oldScenes||[]))if(!keepSc.includes(osc.id))await sb.from('gr_scenes').delete().eq('id',osc.id);
 
      if(ep.scenes.length){
-      await supabase.from('gr_scenes').upsert(ep.scenes.map((sc,i)=>({id:sc.id,episode_id:ep.id,speaker:sc.speaker||null,illo:sc.illo||null,bg_url:sc.bg||null,loc_id:sc.loc||null,scene_text:sc.text,endnote:sc.endnote||null,ord:i})));
+      await sb.from('gr_scenes').upsert(ep.scenes.map((sc,i)=>({id:sc.id,episode_id:ep.id,speaker:sc.speaker||null,illo:sc.illo||null,bg_url:sc.bg||null,loc_id:sc.loc||null,scene_text:sc.text,endnote:sc.endnote||null,ord:i})));
       const sceneIds=ep.scenes.map(sc=>sc.id);
-      await supabase.from('gr_choices').delete().in('scene_id',sceneIds);
+      await sb.from('gr_choices').delete().in('scene_id',sceneIds);
       const choiceRows=[];
       ep.scenes.forEach(sc=>(sc.choices||[]).forEach((c,i)=>choiceRows.push({scene_id:sc.id,txt:c.t,go:c.go,ctype:c.type||'free',cost:c.cost||null,ord:i})));
-      if(choiceRows.length)await supabase.from('gr_choices').insert(choiceRows);
+      if(choiceRows.length)await sb.from('gr_choices').insert(choiceRows);
      }
     }
    }
@@ -343,9 +343,9 @@ async function save(){
 async function uploadImg(inp,cb){
  const f=inp.files[0];if(!f)return;
  const path=`uploads/${Date.now()}_${f.name.replace(/[^a-zA-Z0-9.\-]/g,'_')}`;
- const {error}=await supabase.storage.from('gr-media').upload(path,f,{upsert:true});
+ const {error}=await sb.storage.from('gr-media').upload(path,f,{upsert:true});
  if(error){alert('Не удалось загрузить картинку: '+error.message);return}
- const {data}=supabase.storage.from('gr-media').getPublicUrl(path);
+ const {data}=sb.storage.from('gr-media').getPublicUrl(path);
  cb(data.publicUrl);
 }
 
@@ -570,11 +570,11 @@ function admLogin(){
 }
 window.adminLogin=async()=>{
  const email=v('adm_email'),pass=document.getElementById('adm_pass').value;
- const {error}=await supabase.auth.signInWithPassword({email,password:pass});
+ const {error}=await sb.auth.signInWithPassword({email,password:pass});
  if(error){document.getElementById('adm_err').textContent='Не вошло: '+error.message;return}
  authed=true;renderAdmin();
 };
-window.adminLogout=async()=>{await supabase.auth.signOut();authed=false;renderAdmin()};
+window.adminLogout=async()=>{await sb.auth.signOut();authed=false;renderAdmin()};
 window.aSet=t=>{aTab=t;nav={st:null,se:null,ep:null,sc:null};if(t==='chars'&&!cform)cform={name:'',arch:'Холодный альфа',color:COLORS[0],look:'',first:''};renderAdmin()};
 
 const nStory=()=>getStory(nav.st);
@@ -823,7 +823,7 @@ function v(id){const e=document.getElementById(id);return e?e.value.trim():''}
 
 async function bootDB(){
  try{
-   const {data:{session}}=await supabase.auth.getSession();
+   const {data:{session}}=await sb.auth.getSession();
    authed=!!session;
  }catch(e){console.error('auth session check failed',e)}
  try{
