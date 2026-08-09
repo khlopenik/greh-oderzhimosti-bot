@@ -56,6 +56,7 @@
   .opt{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px 14px;font-size:14px;margin-bottom:10px;cursor:pointer}
   .match{text-align:center;padding:20px 6px}.match .ava{width:90px;height:90px;font-size:36px;margin:0 auto 14px}
   .field{margin-bottom:12px}
+  .chk{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
   .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
   .field input,.field textarea,.field select{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;font-family:inherit;outline:none;background:#fff}
   .field textarea{min-height:60px;resize:vertical}
@@ -88,7 +89,7 @@
   .libcard .libcover{position:relative;background:linear-gradient(135deg,#534AB7,#D4537E);min-height:170px}
   .libcard .libcover img{display:block;width:100%;height:auto}
   .libcard .libbadge{position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.45);color:#fff;font-size:9.5px;padding:2px 7px;border-radius:8px;font-weight:600}
-  .libcard .libbody{padding:10px 11px}
+  .libcard .libbody{padding:10px 11px;text-align:center}
   .libcard .libname{font-size:13.5px;font-weight:600;margin-bottom:3px;color:#efe6e8}
   .libcard .libdesc{font-size:11.5px;color:#93858a;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .libempty{text-align:center;color:#93858a;font-size:13px;padding:40px 10px}
@@ -96,7 +97,7 @@
   .libov{position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:24px}
   .libpv{position:relative;width:100%;max-width:360px;background:#1c1618;border:1px solid rgba(255,255,255,.12);
     border-radius:20px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.6)}
-  .libpv .cover{width:100%;aspect-ratio:3/4;background-size:cover;background-position:center;position:relative}
+  .libpv .cover{width:100%;aspect-ratio:3/4;background-size:contain;background-repeat:no-repeat;background-position:center;background-color:#170a0d;position:relative}
   .libpv .closex{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.5);
     color:#fff;text-align:center;line-height:32px;cursor:pointer;font-size:16px}
   .libpv .body{padding:16px 18px 20px}
@@ -113,8 +114,9 @@
   .vnbg{position:absolute;inset:0;background-size:cover;background-position:center}
   .vnchar{position:absolute;bottom:-16%;height:205%;max-width:118%;
     object-fit:contain;pointer-events:none}
-  .vnchar.pos-left{left:-6%;object-position:bottom left}
+  .vnchar.pos-left{left:-6%;object-position:bottom left;transform:scaleX(-1)}
   .vnchar.pos-right{right:-6%;object-position:bottom right}
+  .vnchar.pos-center{left:50%;transform:translateX(-50%);object-position:bottom center}
   .vnback{position:absolute;top:12px;left:12px;z-index:6;width:34px;height:34px;border-radius:50%;
     background:rgba(0,0,0,.45);color:#fff;font-size:20px;line-height:34px;text-align:center;cursor:pointer;backdrop-filter:blur(3px)}
   .vnicons{position:absolute;top:12px;right:12px;z-index:6;display:flex;gap:8px}
@@ -137,13 +139,13 @@
     clip-path:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px)}
   .vntext{color:#fff;font-size:16px;line-height:1.5}
   .vnend{color:#ffd9a8;font-size:12.5px;font-style:italic;margin-top:10px}
-  .vnchoice{padding:2px;background:linear-gradient(120deg,#ff2f8e,#ffc74d);cursor:pointer;
+  .vnchoice{padding:2px;background:linear-gradient(120deg,#7a2350,#a8483f);cursor:pointer;
     clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px);
-    filter:drop-shadow(0 0 5px rgba(255,47,142,.5))}
-  .vnchoice span{display:block;padding:13px 18px;background:rgba(140,26,124,.92);color:#fff;font-size:15px;
+    filter:drop-shadow(0 0 5px rgba(120,20,40,.4))}
+  .vnchoice span{display:block;padding:13px 18px;background:rgba(50,16,30,.92);color:#fff;font-size:15px;
     clip-path:polygon(11px 0,100% 0,100% calc(100% - 11px),calc(100% - 11px) 100%,0 100%,0 11px)}
-  .vnchoice:active span{background:rgba(170,36,150,.95)}
-  .vnchoice.dia span{background:rgba(150,90,20,.92)}
+  .vnchoice:active span{background:rgba(70,24,42,.95)}
+  .vnchoice.dia span{background:rgba(120,75,20,.92)}
   .vnchoice.ghost span{background:rgba(30,20,26,.75);border:1px solid rgba(255,255,255,.18)}
   .vntap{align-self:center;color:rgba(255,255,255,.55);font-size:12px;font-style:italic;padding-top:2px}
 
@@ -152,14 +154,18 @@
   #splash.hide{opacity:0;pointer-events:none}
   #splash .bar{width:220px;height:8px;border-radius:6px;background:rgba(255,255,255,.18);overflow:hidden;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,.5)}
   #splash .bar i{display:block;height:100%;width:0%;border-radius:6px;background:linear-gradient(90deg,#7a0d0d,#e2263f);transition:width .12s linear}
-  #splash .pct{font-size:13px;font-weight:700;color:#fff;margin-bottom:8px;text-shadow:0 1px 4px rgba(0,0,0,.8)}
+  #splash .pctrow{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  #splash .spinner{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.25);
+    border-top-color:#fff;animation:splashspin .7s linear infinite}
+  @keyframes splashspin{to{transform:rotate(360deg)}}
+  #splash .pct{font-size:13px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8)}
   #splash .hint{font-size:12px;color:#e8b9be;min-height:16px;font-style:italic;text-shadow:0 1px 4px rgba(0,0,0,.8)}
 </style>
 </head>
 <body>
 <div id="splash">
   <div class="bar"><i id="splashFill"></i></div>
-  <div class="pct" id="splashPct">0%</div>
+  <div class="pctrow"><div class="spinner"></div><div class="pct" id="splashPct">0%</div></div>
   <div class="hint" id="splashHint">загружаем историю…</div>
 </div>
 <div class="proto-flag" id="protoflag" hidden>РЕЖИМ АДМИНА · данные в общей базе (Supabase)</div>
@@ -279,7 +285,7 @@ async function loadDB(){
      (choices||[]).forEach(c=>{(choicesByScene[c.scene_id]=choicesByScene[c.scene_id]||[]).push({t:c.txt,go:c.go,type:c.ctype,cost:c.cost})});
     }
     episodesOut.push({id:ep.id,title:ep.title,start:ep.start_scene,scenes:(scenes||[]).map(sc=>({
-     id:sc.id,speaker:sc.speaker,illo:sc.illo,bg:sc.bg_url,loc:sc.loc_id,text:sc.scene_text,endnote:sc.endnote,
+     id:sc.id,speaker:sc.speaker,illo:sc.illo,bg:sc.bg_url,loc:sc.loc_id,text:sc.scene_text,endnote:sc.endnote,solo:sc.solo,
      choices:choicesByScene[sc.id]||[],
     }))});
    }
@@ -324,7 +330,7 @@ async function save(){
      for(const osc of (oldScenes||[]))if(!keepSc.includes(osc.id))await sb.from('gr_scenes').delete().eq('id',osc.id);
 
      if(ep.scenes.length){
-      await sb.from('gr_scenes').upsert(ep.scenes.map((sc,i)=>({id:sc.id,episode_id:ep.id,speaker:sc.speaker||null,illo:sc.illo||null,bg_url:sc.bg||null,loc_id:sc.loc||null,scene_text:sc.text,endnote:sc.endnote||null,ord:i})));
+      await sb.from('gr_scenes').upsert(ep.scenes.map((sc,i)=>({id:sc.id,episode_id:ep.id,speaker:sc.speaker||null,illo:sc.illo||null,bg_url:sc.bg||null,loc_id:sc.loc||null,scene_text:sc.text,endnote:sc.endnote||null,solo:!!sc.solo,ord:i})));
       const sceneIds=ep.scenes.map(sc=>sc.id);
       await sb.from('gr_choices').delete().in('scene_id',sceneIds);
       const choiceRows=[];
@@ -423,7 +429,7 @@ function libPreviewCard(s){
    <div class="libpv" onclick="event.stopPropagation()">
      <div class="cover" style="background-image:url(${s.cover||''})"><div class="closex" onclick="libPreviewClose()">✕</div></div>
      <div class="body">
-       <div class="epnum">Серия ${epNum}${total?'/'+total:''} (Сезон 1)</div>
+       <div class="epnum">Серия ${epNum}/${total>1?total:'X'} (Сезон 1)</div>
        ${genres.length?`<div class="genres">${genres.map(g=>`<span>${esc(g)}</span>`).join('')}</div>`:''}
        <div class="desc">${esc(s.desc||'')}</div>
        <button class="btn" onclick="libPlay(${s.id})">${ready?'Играть':'Скоро'}</button>
@@ -497,13 +503,16 @@ function renderStory(){
  </div>`;
  if(overlay)h+=overlayHTML();
  if(!bgUrl&&n.illo)h+=`<div class="vnnote">арт: ${esc(n.illo)}</div>`;
- if(castMember&&castMember.img)h+=`<img class="vnchar ${castMember.gg?'pos-left':'pos-right'}" src="${castMember.img}">`;
+ const charPos=n.solo?'pos-center':(castMember&&castMember.gg?'pos-left':'pos-right');
+ if(castMember&&castMember.img)h+=`<img class="vnchar ${charPos}" src="${castMember.img}">`;
 
  h+=`<div class="vnui">`;
- h+=`<div class="vntab"><span>${n.speaker?esc(n.speaker):'…'}</span></div>`;
- h+=`<div class="vnbox"><div class="in"><div class="vntext">${esc(n.text)}</div>`;
- if(n.endnote)h+=`<div class="vnend">${esc(n.endnote)}</div>`;
- h+=`</div></div>`;
+ if(n.text||n.speaker||n.endnote){
+   h+=`<div class="vntab"><span>${n.speaker?esc(n.speaker):'…'}</span></div>`;
+   h+=`<div class="vnbox"><div class="in"><div class="vntext">${esc(n.text)}</div>`;
+   if(n.endnote)h+=`<div class="vnend">${esc(n.endnote)}</div>`;
+   h+=`</div></div>`;
+ }
 
  if(tapThrough){
    h+=`<div class="vntap">тронь экран, чтобы продолжить ›</div>`;
@@ -521,6 +530,24 @@ function renderStory(){
  }
  h+=`</div></div>`;
  screen.innerHTML=h;screen.scrollTop=0;
+ preloadUpcoming(ep,n,st,choices,tapTarget);
+}
+const preloadedUrls=new Set();
+function preloadUrl(url){
+ if(!url||preloadedUrls.has(url))return;
+ preloadedUrls.add(url);
+ const img=new Image();img.src=url;
+}
+function preloadUpcoming(ep,n,st,choices,tapTarget){
+ const targets=tapTarget?[tapTarget]:choices.map(c=>c.go).filter(g=>g&&g!=='__restart');
+ targets.forEach(id=>{
+  const sc=ep.scenes.find(x=>x.id===id);
+  if(!sc)return;
+  const loc=(sc.loc&&st&&st.locations)?st.locations.find(l=>l.id===sc.loc):null;
+  preloadUrl((loc&&loc.bg)?loc.bg:sc.bg);
+  const cm=(sc.speaker&&st&&st.cast)?st.cast.find(c=>c.name===sc.speaker):null;
+  if(cm)preloadUrl(cm.img);
+ });
 }
 window.goNode=id=>{node=id;saveProgress();render()};
 window.restart=()=>{node=activeEp().start;saveProgress();render()};
@@ -740,6 +767,7 @@ function admScene(){
   <div class="field"><label>Или своя картинка сцены (перебивает локацию)</label><input type="file" accept="image/*" onchange="upBg(this)">${sc.bg?'<div class="del" onclick="clrBg()" style="margin-top:6px">убрать картинку</div>':''}</div>
   <div class="field"><label>Описание арта (если фона нет)</label><input id="e_illo" value="${esc(sc.illo)}" placeholder="дождь, бар, взгляд альфы"></div>
   <div class="field"><label>Кто говорит (пусто = от автора)</label><input id="e_sp" value="${esc(sc.speaker)}" placeholder="Рэн / ??? / (пусто)"></div>
+  <div class="field"><label class="chk"><input type="checkbox" id="e_solo" ${sc.solo?'checked':''}> ГГ не участвует в этой сцене (портрет по центру, а не слева/справа)</label></div>
   <div class="field"><label>Текст сцены</label><textarea id="e_txt" placeholder="Что происходит…">${esc(sc.text)}</textarea></div>
   <div class="field"><label>Приписка в конце (напр. «Конец серии»)</label><input id="e_end" value="${esc(sc.endnote||'')}"></div>
   <div class="field"><label>Действия ГГ (выборы)</label>
@@ -764,7 +792,7 @@ window.addChoice=()=>{pullScene();nScene().choices.push({t:'',go:'',type:'free',
 window.rmChoice=i=>{pullScene();nScene().choices.splice(i,1);renderAdmin()};
 function pullScene(){const sc=nScene();
  const g=id=>{const e=document.getElementById(id);return e?e.value:undefined};
- if(g('e_txt')!==undefined){sc.illo=g('e_illo');sc.speaker=g('e_sp');sc.text=g('e_txt');sc.endnote=g('e_end');if(g('e_loc')!==undefined)sc.loc=g('e_loc')}
+ if(g('e_txt')!==undefined){sc.illo=g('e_illo');sc.speaker=g('e_sp');sc.text=g('e_txt');sc.endnote=g('e_end');if(g('e_loc')!==undefined)sc.loc=g('e_loc');const soloEl=document.getElementById('e_solo');if(soloEl)sc.solo=soloEl.checked}
  const rows={};document.querySelectorAll('[data-ci]').forEach(el=>{const i=el.dataset.ci;rows[i]=rows[i]||{t:'',go:'',type:'free',cost:''};rows[i][el.dataset.k]=el.value});
  const keys=Object.keys(rows);if(keys.length)sc.choices=keys.sort((a,b)=>a-b).map(k=>rows[k]);
 }
@@ -775,21 +803,25 @@ window.saveScene=()=>{pullScene();const sc=nScene();sc.choices=(sc.choices||[]).
 function v(id){const e=document.getElementById(id);return e?e.value.trim():''}
 
 window.__dbReady=false;
+window.__loadStage=5;
 async function bootDB(){
  try{
    const {data:{session}}=await sb.auth.getSession();
    authed=!!session;
  }catch(e){console.error('auth session check failed',e)}
+ window.__loadStage=30;
  try{
    await loadDB();
+   window.__loadStage=85;
    try{DB.progress=JSON.parse(localStorage.getItem('gr_progress'))||{}}catch(e){DB.progress={}}
  }catch(e){console.error('Не удалось загрузить базу из Supabase:',e)}
  render();
+ window.__loadStage=100;
  window.__dbReady=true;
 }
 bootDB();
 
-/* ---------- заставка загрузки: не гаснет, пока реально не загружены данные ---------- */
+/* ---------- заставка загрузки: спиннер крутится и держит процент реального этапа, не гаснет пока не загружено ---------- */
 (function(){
   const fill=document.getElementById('splashFill'), pctEl=document.getElementById('splashPct'),
         hintEl=document.getElementById('splashHint'), splash=document.getElementById('splash');
@@ -798,11 +830,11 @@ bootDB();
   hintEl.textContent=hints[0];
   const hintTimer=setInterval(()=>{hi=(hi+1)%hints.length;hintEl.textContent=hints[hi]},550);
   const tick=setInterval(()=>{
-    const cap=window.__dbReady?100:92;
-    pct=Math.min(cap,pct+(2+Math.random()*6));
+    const cap=window.__loadStage||5;
+    pct=Math.min(cap,pct+(1+Math.random()*4));
     fill.style.width=pct+'%';
     pctEl.textContent=Math.floor(pct)+'%';
-    if(pct>=100){
+    if(window.__dbReady&&pct>=100){
       clearInterval(tick);clearInterval(hintTimer);
       setTimeout(()=>{splash.classList.add('hide');setTimeout(()=>splash.remove(),550)},250);
     }
