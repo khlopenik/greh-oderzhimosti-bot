@@ -112,11 +112,11 @@
     background:#120a14 center/cover no-repeat;background-image:linear-gradient(160deg,#2a1030,#120a14)}
   .vn.hasbg{background-image:none}
   .vnbg{position:absolute;inset:0;background-size:cover;background-position:center}
-  .vnchar{position:absolute;bottom:-16%;height:205%;max-width:118%;
-    object-fit:contain;pointer-events:none}
-  .vnchar.pos-left{left:-6%;object-position:bottom left;transform:scaleX(-1)}
-  .vnchar.pos-right{right:-6%;object-position:bottom right}
-  .vnchar.pos-center{left:50%;transform:translateX(-50%);object-position:bottom center}
+  .vnchar{position:absolute;bottom:0;top:8%;width:64%;
+    object-fit:cover;object-position:top center;pointer-events:none}
+  .vnchar.pos-left{left:0;transform:scaleX(-1)}
+  .vnchar.pos-right{right:0}
+  .vnchar.pos-center{left:50%;width:78%;transform:translateX(-50%);object-fit:contain;object-position:bottom center}
   .vnback{position:absolute;top:12px;left:12px;z-index:6;width:34px;height:34px;border-radius:50%;
     background:rgba(0,0,0,.45);color:#fff;font-size:20px;line-height:34px;text-align:center;cursor:pointer;backdrop-filter:blur(3px)}
   .vnicons{position:absolute;top:12px;right:12px;z-index:6;display:flex;gap:8px}
@@ -128,6 +128,8 @@
   .vnpanel-title{font-size:16px;font-weight:700;color:#fff;margin-bottom:14px}
   .vnnote{position:absolute;top:14px;left:56px;z-index:6;background:rgba(0,0,0,.45);color:#e7d3d8;
     font-size:11px;padding:6px 10px;border-radius:8px;font-style:italic}
+  .vnfade{position:absolute;left:0;right:0;bottom:0;z-index:2;height:38%;pointer-events:none;
+    background:linear-gradient(to top,rgba(5,2,3,.8),transparent)}
   .vnui{position:absolute;left:0;right:0;bottom:0;z-index:5;padding:0 12px 26px;display:flex;flex-direction:column;gap:9px}
   .vntab{align-self:flex-start;margin-left:18px;margin-bottom:-11px;position:relative;z-index:2}
   .vntab span{display:block;padding:7px 22px;border-radius:10px 10px 0 0;background:linear-gradient(100deg,#8a1a6e,#c22a6e);
@@ -150,23 +152,42 @@
   .vntap{align-self:center;color:rgba(255,255,255,.55);font-size:12px;font-style:italic;padding-top:2px}
 
   #splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
-    background:#0a0505 url(static/bg/app-splash.png) center/cover no-repeat;color:#fff;transition:opacity .5s ease;padding:24px;padding-bottom:11%;text-align:center}
+    background:#0a0505 url(static/bg/app-splash.png) center/cover no-repeat;color:#fff;transition:opacity .5s ease;text-align:center}
   #splash.hide{opacity:0;pointer-events:none}
-  #splash .bar{width:220px;height:8px;border-radius:6px;background:rgba(255,255,255,.18);overflow:hidden;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,.5)}
-  #splash .bar i{display:block;height:100%;width:0%;border-radius:6px;background:linear-gradient(90deg,#7a0d0d,#e2263f);transition:width .12s linear}
-  #splash .pctrow{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-  #splash .spinner{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.25);
+  #splash .loadcard{width:calc(100% - 48px);max-width:280px;margin-bottom:max(28px,6%);padding:14px 18px 16px;
+    background:rgba(8,4,5,.6);border-radius:16px;backdrop-filter:blur(3px);box-shadow:0 6px 20px rgba(0,0,0,.4)}
+  #splash .snakebar{width:100%;height:26px;display:block;overflow:visible}
+  #splash .pctrow{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px}
+  #splash .spinner{width:12px;height:12px;border-radius:50%;border:2px solid rgba(255,255,255,.25);
     border-top-color:#fff;animation:splashspin .7s linear infinite}
   @keyframes splashspin{to{transform:rotate(360deg)}}
   #splash .pct{font-size:13px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8)}
-  #splash .hint{font-size:12px;color:#e8b9be;min-height:16px;font-style:italic;text-shadow:0 1px 4px rgba(0,0,0,.8)}
+  #splash .hint{font-size:12px;color:#e8b9be;min-height:16px;font-style:italic;text-shadow:0 1px 4px rgba(0,0,0,.8);margin-top:6px}
 </style>
 </head>
 <body>
 <div id="splash">
-  <div class="bar"><i id="splashFill"></i></div>
-  <div class="pctrow"><div class="spinner"></div><div class="pct" id="splashPct">0%</div></div>
-  <div class="hint" id="splashHint">загружаем историю…</div>
+  <div class="loadcard">
+    <svg class="snakebar" viewBox="0 0 260 26" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="snakeGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#5a0d0d"/>
+          <stop offset="100%" stop-color="#e2263f"/>
+        </linearGradient>
+      </defs>
+      <path class="snaketrack" d="M10,13 Q35,0 60,13 T110,13 T160,13 T210,13 T250,13"
+        fill="none" stroke="rgba(255,255,255,.15)" stroke-width="4" stroke-linecap="round"/>
+      <path id="snakeFill" d="M10,13 Q35,0 60,13 T110,13 T160,13 T210,13 T250,13"
+        fill="none" stroke="url(#snakeGrad)" stroke-width="5" stroke-linecap="round"/>
+      <g id="snakeHead">
+        <circle r="6" fill="#e2263f"/>
+        <circle cx="-2" cy="-2" r="1" fill="#fff"/>
+        <circle cx="2" cy="-2" r="1" fill="#fff"/>
+      </g>
+    </svg>
+    <div class="pctrow"><div class="spinner"></div><div class="pct" id="splashPct">0%</div></div>
+    <div class="hint" id="splashHint">загружаем историю…</div>
+  </div>
 </div>
 <div class="proto-flag" id="protoflag" hidden>РЕЖИМ АДМИНА · данные в общей базе (Supabase)</div>
 <div class="wrap">
@@ -292,7 +313,7 @@ async function loadDB(){
    seasonsOut.push({id:se.id,title:se.title,episodes:episodesOut});
   }
   out.push({
-   id:s.id,title:s.title,genre:s.genre,cover:s.cover_url,desc:s.description,
+   id:s.id,title:s.title,genre:s.genre,cover:s.cover_url,previewBg:s.preview_bg_url,desc:s.description,
    gg:{name:s.gg_name,desc:s.gg_desc},
    locations:(locs||[]).map(l=>({id:l.id,name:l.name,bg:l.bg_url})),
    cast:(cast||[]).map(c=>({id:c.id,name:c.name,img:c.img_url,gg:!!c.gg})),
@@ -305,7 +326,7 @@ async function loadDB(){
 async function save(){
  try{
   for(const s of DB.stories){
-   await sb.from('gr_stories').upsert({id:s.id,title:s.title,genre:s.genre,cover_url:s.cover,description:s.desc,gg_name:s.gg.name,gg_desc:s.gg.desc});
+   await sb.from('gr_stories').upsert({id:s.id,title:s.title,genre:s.genre,cover_url:s.cover,preview_bg_url:s.previewBg||null,description:s.desc,gg_name:s.gg.name,gg_desc:s.gg.desc});
    await sb.from('gr_locations').delete().eq('story_id',s.id);
    if(s.locations.length)await sb.from('gr_locations').insert(s.locations.map(l=>({id:l.id,story_id:s.id,name:l.name,bg_url:l.bg})));
    await sb.from('gr_cast').delete().eq('story_id',s.id);
@@ -425,6 +446,17 @@ function libPreviewCard(s){
  if(prog&&se){const i=se.episodes.findIndex(e=>e.id===prog.ep);if(i>=0)epNum=i+1}
  const ready=s.seasons.some(x=>x.episodes.some(e=>e.scenes.length));
  const genres=(s.genre||'').split('·').map(g=>g.trim()).filter(Boolean);
+ if(s.previewBg)return `<div class="libov" onclick="libPreviewClose()">
+   <div class="libpv bgmode" onclick="event.stopPropagation()" style="background-image:url(${s.previewBg})">
+     <div class="closex" onclick="libPreviewClose()">✕</div>
+     <div class="body bgbody">
+       <div class="epnum">Серия ${epNum}/${total>1?total:'X'} (Сезон 1)</div>
+       ${genres.length?`<div class="genres">${genres.map(g=>`<span>${esc(g)}</span>`).join('')}</div>`:''}
+       <div class="desc">${esc(s.desc||'')}</div>
+       <button class="btn" onclick="libPlay(${s.id})">${ready?'Играть':'Скоро'}</button>
+     </div>
+   </div>
+ </div>`;
  return `<div class="libov" onclick="libPreviewClose()">
    <div class="libpv" onclick="event.stopPropagation()">
      <div class="cover" style="background-image:url(${s.cover||''})"><div class="closex" onclick="libPreviewClose()">✕</div></div>
@@ -505,6 +537,7 @@ function renderStory(){
  if(!bgUrl&&n.illo)h+=`<div class="vnnote">арт: ${esc(n.illo)}</div>`;
  const charPos=n.solo?'pos-center':(castMember&&castMember.gg?'pos-left':'pos-right');
  if(castMember&&castMember.img)h+=`<img class="vnchar ${charPos}" src="${castMember.img}">`;
+ h+=`<div class="vnfade"></div>`;
 
  h+=`<div class="vnui">`;
  if(n.text||n.speaker||n.endnote){
@@ -661,7 +694,9 @@ function admOneStory(){
  return `<div class="crumb"><b>${esc(s.title)}</b></div>
   <button class="btn sm ghost" onclick="goStories()">‹ К галерее</button>
   ${s.cover?`<img class="thumb" src="${s.cover}" style="margin-top:12px">`:''}
-  <div class="field" style="margin-top:12px"><label>Обложка истории</label><input type="file" accept="image/*" onchange="upCover(this)"></div>
+  <div class="field" style="margin-top:12px"><label>Обложка истории (карточка в галерее)</label><input type="file" accept="image/*" onchange="upCover(this)"></div>
+  ${s.previewBg?`<img class="thumb" src="${s.previewBg}" style="margin-top:12px">`:''}
+  <div class="field"><label>Фон попапа-превью (с надписью сверху и пустым местом под текст снизу)</label><input type="file" accept="image/*" onchange="upPreviewBg(this)"></div>
   <div class="field"><label>Название</label><input id="e_t" value="${esc(s.title)}"></div>
   <div class="field"><label>Жанр</label><input id="e_g" value="${esc(s.genre)}"></div>
   <div class="field"><label>О чём история</label><textarea id="e_d">${esc(s.desc||'')}</textarea></div>
@@ -680,6 +715,7 @@ function admOneStory(){
 window.goStories=()=>{nav.st=null;renderAdmin()};
 window.saveStoryMeta=()=>{const s=nStory();s.title=v('e_t')||s.title;s.genre=v('e_g');s.desc=v('e_d');s.gg.name=v('e_gg')||'ГГ';s.gg.desc=v('e_ggd');save();renderAdmin()};
 window.upCover=inp=>uploadImg(inp,url=>{nStory().cover=url;save();renderAdmin()});
+window.upPreviewBg=inp=>uploadImg(inp,url=>{nStory().previewBg=url;save();renderAdmin()});
 window.addLoc=()=>{
  const s=nStory();if(!s.locations)s.locations=[];
  DB.nloc=(DB.nloc||10)+1;
