@@ -112,6 +112,7 @@
     background:#120a14 center/cover no-repeat;background-image:linear-gradient(160deg,#2a1030,#120a14)}
   .vn.hasbg{background-image:none}
   .vnbg{position:absolute;inset:0;background-size:cover;background-position:center}
+  video.vnbg{width:100%;height:100%;object-fit:cover}
   .vnchar{position:absolute;bottom:0;top:8%;width:64%;
     object-fit:cover;object-position:top center;pointer-events:none}
   .vnchar.pos-left{left:0;transform:scaleX(-1)}
@@ -388,6 +389,7 @@ if(location.hash==='#admin'){
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>setTab(t.dataset.t));
 function setTab(n){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.t===n));tab=n;render()}
 const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const isVideoUrl=u=>/\.(mp4|webm|mov|m4v)(\?|$)/i.test(u||'');
 function getStory(id){return DB.stories.find(s=>s.id===id)}
 function activeEp(){const a=DB.active;const st=getStory(a.st);if(!st)return null;const se=st.seasons.find(x=>x.id===a.se);if(!se)return null;return se.episodes.find(x=>x.id===a.ep)||null}
 
@@ -530,7 +532,8 @@ function renderStory(){
  const tapTarget = choices.length===1 ? choices[0].go : (autoNext ? nextScene.id : null);
 
  let h=`<div class="vn${bgUrl?' hasbg':''}"${tapThrough?` onclick="goNode('${tapTarget}')"`:''}>`;
- if(bgUrl)h+=`<div class="vnbg" style="background-image:url(${bgUrl})"></div>`;
+ if(bgUrl&&isVideoUrl(bgUrl))h+=`<video class="vnbg" src="${bgUrl}" autoplay loop muted playsinline></video>`;
+ else if(bgUrl)h+=`<div class="vnbg" style="background-image:url(${bgUrl})"></div>`;
  h+=`<div class="vnback" onclick="event.stopPropagation();libOpen()">‹</div>`;
  h+=`<div class="vnicons">
    <div class="vnicon" onclick="event.stopPropagation();libOpen()" title="В галерею">🏠</div>
@@ -655,12 +658,12 @@ window.rmStory=id=>{if(confirm('Удалить историю?')){DB.stories=DB.
 /* --- уровень 1: история → ГГ + сезоны --- */
 function locsBlock(s){
  return `<div style="font-size:13px;color:var(--muted);margin:20px 0 10px">Локации (${s.locations.length}) — фоны, которые переиспользуешь в сценах</div>
-  ${s.locations.map(l=>`<div class="row">${l.bg?`<img src="${l.bg}" style="width:46px;height:46px;object-fit:cover;border-radius:8px">`:'<div style="width:46px;height:46px;border-radius:8px;background:var(--purple-soft)"></div>'}
+  ${s.locations.map(l=>`<div class="row">${l.bg?(isVideoUrl(l.bg)?`<video src="${l.bg}" muted style="width:46px;height:46px;object-fit:cover;border-radius:8px"></video>`:`<img src="${l.bg}" style="width:46px;height:46px;object-fit:cover;border-radius:8px">`):'<div style="width:46px;height:46px;border-radius:8px;background:var(--purple-soft)"></div>'}
     <div class="rt"><div>${esc(l.name)}</div><div class="m">${l.bg?'фон загружен':'нет фона'}</div></div>
-    <label class="btn sm ghost" style="cursor:pointer">Фон<input type="file" accept="image/*" style="display:none" onchange="upLoc(this,'${l.id}')"></label>
+    <label class="btn sm ghost" style="cursor:pointer">Фон<input type="file" accept="image/*,video/*" style="display:none" onchange="upLoc(this,'${l.id}')"></label>
     <span class="del" onclick="rmLoc('${l.id}')">✕</span></div>`).join('')}
   <div class="field" style="margin-top:8px"><input id="ns_loc" placeholder="Название локации (Бар ночью)"></div>
-  <div class="field"><label>Фото локации (можно сразу, можно потом)</label><input type="file" id="ns_locfile" accept="image/*"></div>
+  <div class="field"><label>Фото или видео локации (можно сразу, можно потом)</label><input type="file" id="ns_locfile" accept="image/*,video/*"></div>
   <button class="btn ghost" onclick="addLoc()">+ Добавить локацию</button>`;
 }
 function castBlock(s){
@@ -782,15 +785,33 @@ function admOneEpisode(){
     <div class="ch">${(sc.choices||[]).map(c=>(c.type==='dia'?'💎 ':'▸ ')+esc(c.t)+' → '+tgtLabel(c.go)).join('<br>')||'— конец'}</div>
     <div class="rowbtns"><button class="btn sm ghost" onclick="goScene('${sc.id}')">Изменить</button>
      <button class="btn sm ghost" onclick="setStart('${sc.id}')">Старт</button>
-     <button class="btn sm ghost" onclick="rmScene('${sc.id}')">Удалить</button></div></div>`).join('')}
+     <button class="btn sm ghost" onclick="rmScene('${sc.id}')">Удалить</button></div>
+    <button class="btn sm ghost" style="margin-top:8px;width:100%" onclick="insertSceneAfter('${sc.id}')">+ вставить сцену после этой</button></div>`).join('')}
   <button class="btn" style="margin-top:8px" onclick="addScene()">+ Добавить сцену</button>`;
 }
 window.goSeasonBack=()=>{nav.ep=null;renderAdmin()};
 window.playEp=()=>{DB.active={st:nav.st,se:nav.se,ep:nav.ep};save();node=null;libraryOpen=false;setTab('story')};
 window.addScene=()=>{const ep=nEp();const id='s'+(DB.nsc++);ep.scenes.push({id,speaker:'',illo:'',bg:null,text:'',choices:[]});if(!ep.start)ep.start=id;save();nav.sc=id;renderAdmin()};
+function renumberScenes(ep){
+ const remap={};
+ ep.scenes.forEach((sc,i)=>{remap[sc.id]='s'+String(i+1).padStart(2,'0')});
+ if(ep.start&&remap[ep.start])ep.start=remap[ep.start];
+ ep.scenes.forEach(sc=>{(sc.choices||[]).forEach(c=>{if(c.go&&remap[c.go])c.go=remap[c.go]})});
+ ep.scenes.forEach(sc=>{sc.id=remap[sc.id]});
+}
+window.insertSceneAfter=id=>{
+ const ep=nEp();
+ const idx=ep.scenes.findIndex(x=>x.id===id);
+ const newScene={id:'tmpins'+Date.now(),speaker:'',illo:'',bg:null,text:'',choices:[]};
+ ep.scenes.splice(idx+1,0,newScene);
+ renumberScenes(ep);
+ save();
+ nav.sc=newScene.id;
+ renderAdmin();
+};
 window.goScene=id=>{nav.sc=id;renderAdmin()};
 window.setStart=id=>{nEp().start=id;save();renderAdmin()};
-window.rmScene=id=>{const ep=nEp();ep.scenes=ep.scenes.filter(x=>x.id!==id);if(ep.start===id)ep.start=ep.scenes[0]?ep.scenes[0].id:null;save();renderAdmin()};
+window.rmScene=id=>{const ep=nEp();ep.scenes=ep.scenes.filter(x=>x.id!==id);if(ep.start===id)ep.start=ep.scenes[0]?ep.scenes[0].id:null;renumberScenes(ep);save();renderAdmin()};
 function tgtLabel(go){if(go==='__restart')return 'заново';const sc=nEp().scenes.find(x=>x.id===go);return sc?('«'+(sc.text||sc.id).slice(0,14)+'…»'):'(?)'}
 
 /* --- уровень 4: сцена --- */
@@ -802,9 +823,9 @@ function admScene(){
  return `<div class="crumb">${esc(nStory().title)} › ${esc(nEp().title)} › <b>${sc.id}</b></div>
   <button class="btn sm ghost" onclick="backScene()">‹ К сценам</button>
   ${quickBar()}
-  ${sc.bg?`<img class="thumb" src="${sc.bg}" style="margin-top:12px">`:''}
+  ${sc.bg?(isVideoUrl(sc.bg)?`<video class="thumb" src="${sc.bg}" muted style="margin-top:12px"></video>`:`<img class="thumb" src="${sc.bg}" style="margin-top:12px">`):''}
   <div class="field" style="margin-top:12px"><label>Локация (фон из библиотеки истории)</label><select id="e_loc"><option value="">— без локации —</option>${(nStory().locations||[]).map(l=>`<option value="${l.id}" ${sc.loc===l.id?'selected':''}>${esc(l.name)}</option>`).join('')}</select></div>
-  <div class="field"><label>Или своя картинка сцены (перебивает локацию)</label><input type="file" accept="image/*" onchange="upBg(this)">${sc.bg?'<div class="del" onclick="clrBg()" style="margin-top:6px">убрать картинку</div>':''}</div>
+  <div class="field"><label>Или своя картинка/видео сцены (перебивает локацию)</label><input type="file" accept="image/*,video/*" onchange="upBg(this)">${sc.bg?'<div class="del" onclick="clrBg()" style="margin-top:6px">убрать картинку/видео</div>':''}</div>
   <div class="field"><label>Описание арта (если фона нет)</label><input id="e_illo" value="${esc(sc.illo)}" placeholder="дождь, бар, взгляд альфы"></div>
   <div class="field"><label>Кто говорит (пусто = от автора)</label><input id="e_sp" value="${esc(sc.speaker)}" placeholder="Рэн / ??? / (пусто)"></div>
   <div class="field"><label class="chk"><input type="checkbox" id="e_solo" ${sc.solo?'checked':''}> ГГ не участвует в этой сцене (портрет по центру, а не слева/справа)</label></div>
