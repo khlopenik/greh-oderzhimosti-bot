@@ -13,7 +13,7 @@
   // показывает его через кнопку меню, не перезагружая страницу) — поэтому одной
   // проверки версии при загрузке недостаточно: перепроверяем при каждом возврате
   // видимости/фокуса и вдобавок раз в 20 секунд, пока апп открыт.
-  var APP_VERSION='2026-08-10-06';
+  var APP_VERSION='2026-08-10-07';
   var checking=false;
   function checkVersion(){
     if(checking)return;
@@ -166,6 +166,19 @@
     align-items:flex-end;backdrop-filter:blur(2px)}
   .vnpanel{width:100%;padding:20px 16px 28px;background:rgba(28,14,24,.97);border-top:1px solid rgba(255,255,255,.08)}
   .vnpanel-title{font-size:16px;font-weight:700;color:#fff;margin-bottom:14px}
+  .vnend-screen{position:absolute;inset:0;z-index:25;display:flex;align-items:center;justify-content:center;
+    padding:24px;background:rgba(6,3,4,.86);backdrop-filter:blur(3px);animation:vnendfade .4s ease}
+  @keyframes vnendfade{from{opacity:0}to{opacity:1}}
+  .vnend-card{width:100%;max-width:300px;background:#170c10;border:1px solid rgba(255,255,255,.1);
+    border-radius:18px;padding:28px 22px 22px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.6);
+    animation:vnendpop .45s cubic-bezier(.2,1.4,.4,1)}
+  @keyframes vnendpop{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+  .vnend-icon{width:58px;height:58px;line-height:58px;border-radius:50%;margin:0 auto 14px;
+    background:linear-gradient(135deg,#7a0d0d,#e2263f);color:#fff;font-size:28px;font-weight:700;
+    box-shadow:0 0 20px rgba(226,38,63,.6)}
+  .vnend-title{color:#fff;font-size:18px;font-weight:700;margin-bottom:16px}
+  .vnend-wait{color:#e8b9be;font-size:14px;font-style:italic;margin-bottom:16px;line-height:1.4}
+  .vnend-card .btn{margin-bottom:10px}
   .vnnote{position:absolute;top:14px;left:56px;z-index:6;background:rgba(0,0,0,.45);color:#e7d3d8;
     font-size:11px;padding:6px 10px;border-radius:8px;font-style:italic}
   .vnfade{position:absolute;left:0;right:0;bottom:0;z-index:2;height:38%;pointer-events:none;
@@ -327,17 +340,17 @@ async function loadDB(){
      (choices||[]).forEach(c=>{(choicesByScene[c.scene_id]=choicesByScene[c.scene_id]||[]).push({t:c.txt,go:c.go,type:c.ctype,cost:c.cost})});
     }
     episodesOut.push({id:ep.id,title:ep.title,start:ep.start_scene,scenes:(scenes||[]).map(sc=>({
-     id:sc.id,speaker:sc.speaker,illo:sc.illo,bg:sc.bg_url,loc:sc.loc_id,text:sc.scene_text,endnote:sc.endnote,solo:sc.solo,
+     id:sc.id,speaker:sc.speaker,illo:sc.illo,bg:sc.bg_url,loc:sc.loc_id,text:sc.scene_text,endnote:sc.endnote,charPos:sc.char_pos||'',
      choices:choicesByScene[sc.id]||[],
     }))});
    }
-   seasonsOut.push({id:se.id,title:se.title,episodes:episodesOut});
+   seasonsOut.push({id:se.id,title:se.title,nextDate:se.next_date||'',episodes:episodesOut});
   }
   out.push({
    id:s.id,title:s.title,genre:s.genre,cover:s.cover_url,previewBg:s.preview_bg_url,desc:s.description,
    gg:{name:s.gg_name,desc:s.gg_desc},
    locations:(locs||[]).map(l=>({id:l.id,name:l.name,bg:l.bg_url})),
-   cast:(cast||[]).map(c=>({id:c.id,name:c.name,img:c.img_url,gg:!!c.gg})),
+   cast:(cast||[]).map(c=>({id:c.id,name:c.name,img:c.img_url,pos:c.pos||(c.gg?'left':'right')})),
    seasons:seasonsOut,
   });
  }
@@ -351,14 +364,14 @@ async function save(){
    await sb.from('gr_locations').delete().eq('story_id',s.id);
    if(s.locations.length)await sb.from('gr_locations').insert(s.locations.map(l=>({id:l.id,story_id:s.id,name:l.name,bg_url:l.bg})));
    await sb.from('gr_cast').delete().eq('story_id',s.id);
-   if(s.cast.length)await sb.from('gr_cast').insert(s.cast.map(c=>({id:c.id,story_id:s.id,name:c.name,img_url:c.img,gg:!!c.gg})));
+   if(s.cast.length)await sb.from('gr_cast').insert(s.cast.map(c=>({id:c.id,story_id:s.id,name:c.name,img_url:c.img,pos:c.pos||'right'})));
 
    const {data:oldSeasons}=await sb.from('gr_seasons').select('id').eq('story_id',s.id);
    const keepSe=s.seasons.map(se=>se.id);
    for(const os of (oldSeasons||[]))if(!keepSe.includes(os.id))await sb.from('gr_seasons').delete().eq('id',os.id);
 
    for(const [si,se] of s.seasons.entries()){
-    await sb.from('gr_seasons').upsert({id:se.id,story_id:s.id,title:se.title,ord:si});
+    await sb.from('gr_seasons').upsert({id:se.id,story_id:s.id,title:se.title,next_date:se.nextDate||null,ord:si});
 
     const {data:oldEps}=await sb.from('gr_episodes').select('id').eq('season_id',se.id);
     const keepEp=se.episodes.map(ep=>ep.id);
@@ -372,7 +385,7 @@ async function save(){
      for(const osc of (oldScenes||[]))if(!keepSc.includes(osc.id))await sb.from('gr_scenes').delete().eq('id',osc.id);
 
      if(ep.scenes.length){
-      await sb.from('gr_scenes').upsert(ep.scenes.map((sc,i)=>({id:sc.id,episode_id:ep.id,speaker:sc.speaker||null,illo:sc.illo||null,bg_url:sc.bg||null,loc_id:sc.loc||null,scene_text:sc.text,endnote:sc.endnote||null,solo:!!sc.solo,ord:i})));
+      await sb.from('gr_scenes').upsert(ep.scenes.map((sc,i)=>({id:sc.id,episode_id:ep.id,speaker:sc.speaker||null,illo:sc.illo||null,bg_url:sc.bg||null,loc_id:sc.loc||null,scene_text:sc.text,endnote:sc.endnote||null,char_pos:sc.charPos||null,ord:i})));
       const sceneIds=ep.scenes.map(sc=>sc.id);
       await sb.from('gr_choices').delete().in('scene_id',sceneIds);
       const choiceRows=[];
@@ -440,6 +453,23 @@ function saveProgress(){
  if(!DB.progress)DB.progress={};
  DB.progress[DB.active.st]={se:DB.active.se,ep:DB.active.ep,node};
  try{localStorage.setItem('gr_progress',JSON.stringify(DB.progress))}catch(e){}
+}
+function episodeEndHTML(st,ep){
+ const se=st&&st.seasons.find(x=>x.id===DB.active.se);
+ const hasNext=!!nextEpisodeInfo();
+ const nextBlock=hasNext
+   ? `<button class="btn" onclick="event.stopPropagation();continueStory()">Продолжить</button>`
+   : `<div class="vnend-wait">${se&&se.nextDate?`Следующая серия выйдет ${esc(se.nextDate)}`:'Следующая серия скоро'}</div>`;
+ return `<div class="vnend-screen" onclick="event.stopPropagation()">
+   <div class="vnend-card">
+     <div class="vnend-icon">✓</div>
+     <div class="vnend-title">${esc(ep.title||'Серия')} пройдена</div>
+     ${nextBlock}
+     <button class="btn ghost" onclick="event.stopPropagation();restartEpisode()">Пройти серию заново</button>
+     <button class="btn ghost" onclick="event.stopPropagation();restartSeason()">Пройти сезон заново</button>
+     <button class="btn ghost" onclick="event.stopPropagation();libOpen()">Вернуться в галерею</button>
+   </div>
+ </div>`;
 }
 function nextEpisodeInfo(){
  const st=getStory(DB.active.st);
@@ -573,8 +603,9 @@ function renderStory(){
  </div>`;
  if(overlay)h+=overlayHTML();
  if(!bgUrl&&n.illo)h+=`<div class="vnnote">арт: ${esc(n.illo)}</div>`;
- const charPos=n.solo?'pos-center':(castMember&&castMember.gg?'pos-left':'pos-right');
- if(castMember&&castMember.img)h+=`<img class="vnchar ${charPos}" src="${castMember.img}">`;
+ const autoPos=(castMember&&castMember.pos)||'right';
+ const finalPos=n.charPos||autoPos;
+ if(finalPos!=='none'&&castMember&&castMember.img)h+=`<img class="vnchar pos-${finalPos}" src="${castMember.img}">`;
  h+=`<div class="vnfade"></div>`;
 
  h+=`<div class="vnui">`;
@@ -588,12 +619,7 @@ function renderStory(){
  if(tapThrough){
    h+=`<div class="vntap">тронь экран, чтобы продолжить ›</div>`;
  } else if(!choices.length){
-   /* конец серии — итоговый экран */
-   const hasNext=!!nextEpisodeInfo();
-   if(hasNext)h+=`<div class="vnchoice" onclick="event.stopPropagation();continueStory()"><span>Продолжить</span></div>`;
-   h+=`<div class="vnchoice ghost" onclick="event.stopPropagation();restartEpisode()"><span>Пройти серию заново</span></div>`;
-   h+=`<div class="vnchoice ghost" onclick="event.stopPropagation();restartSeason()"><span>Пройти сезон заново</span></div>`;
-   h+=`<div class="vnchoice ghost" onclick="event.stopPropagation();libOpen()"><span>Вернуться в галерею</span></div>`;
+   h+=episodeEndHTML(st,ep);
  } else {
    choices.forEach(c=>{
     const act = c.go==='__restart' ? `restart()` : `goNode('${c.go}')`;
@@ -708,10 +734,16 @@ function locsBlock(s){
   <button class="btn ghost" onclick="addLoc()">+ Добавить локацию</button>`;
 }
 function castBlock(s){
- return `<div style="font-size:13px;color:var(--muted);margin:20px 0 10px">Действующие лица (${s.cast.length}) — портреты на прозрачном фоне, показываются поверх фона сцены, когда имя в поле «Кто говорит» совпадает с именем здесь. Отметь галочкой ГГ (от кого играем) — её портрет всегда будет слева, остальные — справа</div>
+ const posLabel={left:'Слева',right:'Справа',center:'По центру',none:'Без портрета'};
+ return `<div style="font-size:13px;color:var(--muted);margin:20px 0 10px">Действующие лица (${s.cast.length}) — портреты на прозрачном фоне, показываются поверх фона сцены, когда имя в поле «Кто говорит» совпадает с именем здесь. «По умолчанию» ниже — где стоит персонаж, если в самой сцене не выбрано иначе (в сцене можно переопределить)</div>
   ${s.cast.map(c=>`<div class="row">${c.img?`<img src="${c.img}" style="width:46px;height:46px;object-fit:cover;border-radius:8px">`:'<div style="width:46px;height:46px;border-radius:8px;background:var(--purple-soft)"></div>'}
-    <div class="rt"><div>${esc(c.name)}</div><div class="m">${c.img?'портрет загружен':'нет портрета'}</div></div>
-    <label class="btn sm ghost" style="cursor:pointer;${c.gg?'background:var(--pink);color:#fff':''}"><input type="checkbox" ${c.gg?'checked':''} style="margin-right:4px" onchange="setGG('${c.id}')">ГГ</label>
+    <div class="rt"><div>${esc(c.name)}</div><div class="m">По умолчанию: ${posLabel[c.pos||'right']}</div></div>
+    <select onchange="setCastPos('${c.id}',this.value)" style="border-radius:8px;border:1px solid var(--line);padding:6px">
+     <option value="left" ${(c.pos||'right')==='left'?'selected':''}>Слева</option>
+     <option value="right" ${(c.pos||'right')==='right'?'selected':''}>Справа</option>
+     <option value="center" ${c.pos==='center'?'selected':''}>Центр</option>
+     <option value="none" ${c.pos==='none'?'selected':''}>Без портрета</option>
+    </select>
     <label class="btn sm ghost" style="cursor:pointer">Портрет<input type="file" accept="image/*" style="display:none" onchange="upCast(this,'${c.id}')"></label>
     <span class="del" onclick="rmCast('${c.id}')">✕</span></div>`).join('')}
   <div class="field" style="margin-top:8px"><input id="ns_cast" placeholder="Имя персонажа (Итан) — как в поле «Кто говорит»"></div>
@@ -787,7 +819,7 @@ window.addCast=()=>{
 };
 window.upCast=(inp,id)=>uploadImg(inp,url=>{const c=nStory().cast.find(x=>x.id===id);if(c){c.img=url;save();renderAdmin()}});
 window.rmCast=id=>{const s=nStory();s.cast=s.cast.filter(x=>x.id!==id);save();renderAdmin()};
-window.setGG=id=>{const s=nStory();s.cast.forEach(c=>c.gg=(c.id===id&&!c.gg));save();renderAdmin()};
+window.setCastPos=(id,pos)=>{const s=nStory();const c=s.cast.find(x=>x.id===id);if(c)c.pos=pos;save();renderAdmin()};
 window.addSeason=()=>{const t=v('ns_se')||('Сезон '+(nStory().seasons.length+1));nStory().seasons.push({id:'se'+(DB.nse++),title:t,episodes:[]});save();renderAdmin()};
 window.goSeason=id=>{nav.se=id;nav.ep=null;renderAdmin()};
 window.rmSeason=id=>{if(confirm('Удалить сезон?')){const s=nStory();s.seasons=s.seasons.filter(x=>x.id!==id);save();renderAdmin()}};
@@ -804,10 +836,13 @@ function admOneSeason(){
     <button class="btn sm ghost" onclick="goEp('${ep.id}')">Открыть</button>
     <span class="del" onclick="rmEp('${ep.id}')">✕</span></div>`).join('')}
   <div class="field" style="margin-top:10px"><input id="ns_ep" placeholder="Название серии (Серия 1. Знакомство)"></div>
-  <button class="btn" onclick="addEp()">+ Добавить серию</button>`;
+  <button class="btn" onclick="addEp()">+ Добавить серию</button>
+  <div class="field" style="margin-top:20px"><label>Дата выхода следующей серии (если её ещё нет — покажется игроку вместо «Продолжить»)</label>
+   <input id="e_nextdate" value="${esc(se.nextDate||'')}" placeholder="напр. 20 августа" onchange="saveSeasonDate()"></div>`;
 }
 window.goStoryBack=()=>{nav.se=null;renderAdmin()};
 window.addEp=()=>{const t=v('ns_ep')||('Серия '+(nSeason().episodes.length+1));nSeason().episodes.push({id:'e'+(DB.nep++),title:t,start:null,scenes:[]});save();renderAdmin()};
+window.saveSeasonDate=()=>{nSeason().nextDate=v('e_nextdate');save()};
 window.goEp=id=>{nav.ep=id;nav.sc=null;renderAdmin()};
 window.rmEp=id=>{if(confirm('Удалить серию?')){const se=nSeason();se.episodes=se.episodes.filter(x=>x.id!==id);save();renderAdmin()}};
 
@@ -869,7 +904,14 @@ function admScene(){
   <div class="field"><label>Или своя картинка/видео сцены (перебивает локацию)</label><input type="file" accept="image/*,video/*" onchange="upBg(this)">${sc.bg?'<div class="del" onclick="clrBg()" style="margin-top:6px">убрать картинку/видео</div>':''}</div>
   <div class="field"><label>Описание арта (если фона нет)</label><input id="e_illo" value="${esc(sc.illo)}" placeholder="дождь, бар, взгляд альфы"></div>
   <div class="field"><label>Кто говорит (пусто = от автора)</label><input id="e_sp" value="${esc(sc.speaker)}" placeholder="Рэн / ??? / (пусто)"></div>
-  <div class="field"><label class="chk"><input type="checkbox" id="e_solo" ${sc.solo?'checked':''}> ГГ не участвует в этой сцене (портрет по центру, а не слева/справа)</label></div>
+  <div class="field"><label>Портрет говорящего в этой сцене</label>
+   <select id="e_charpos">
+    <option value="" ${!sc.charPos?'selected':''}>Автоматически (как задано у персонажа)</option>
+    <option value="left" ${sc.charPos==='left'?'selected':''}>Слева</option>
+    <option value="right" ${sc.charPos==='right'?'selected':''}>Справа</option>
+    <option value="center" ${sc.charPos==='center'?'selected':''}>По центру</option>
+    <option value="none" ${sc.charPos==='none'?'selected':''}>Без портрета (только фон)</option>
+   </select></div>
   <div class="field"><label>Текст сцены</label><textarea id="e_txt" placeholder="Что происходит…">${esc(sc.text)}</textarea></div>
   <div class="field"><label>Приписка в конце (напр. «Конец серии»)</label><input id="e_end" value="${esc(sc.endnote||'')}"></div>
   <div class="field"><label>Действия ГГ (выборы)</label>
@@ -894,7 +936,7 @@ window.addChoice=()=>{pullScene();nScene().choices.push({t:'',go:'',type:'free',
 window.rmChoice=i=>{pullScene();nScene().choices.splice(i,1);renderAdmin()};
 function pullScene(){const sc=nScene();
  const g=id=>{const e=document.getElementById(id);return e?e.value:undefined};
- if(g('e_txt')!==undefined){sc.illo=g('e_illo');sc.speaker=g('e_sp');sc.text=g('e_txt');sc.endnote=g('e_end');if(g('e_loc')!==undefined)sc.loc=g('e_loc');const soloEl=document.getElementById('e_solo');if(soloEl)sc.solo=soloEl.checked}
+ if(g('e_txt')!==undefined){sc.illo=g('e_illo');sc.speaker=g('e_sp');sc.text=g('e_txt');sc.endnote=g('e_end');if(g('e_loc')!==undefined)sc.loc=g('e_loc');const cpEl=document.getElementById('e_charpos');if(cpEl)sc.charPos=cpEl.value}
  const rows={};document.querySelectorAll('[data-ci]').forEach(el=>{const i=el.dataset.ci;rows[i]=rows[i]||{t:'',go:'',type:'free',cost:''};rows[i][el.dataset.k]=el.value});
  const keys=Object.keys(rows);if(keys.length)sc.choices=keys.sort((a,b)=>a-b).map(k=>rows[k]);
 }
