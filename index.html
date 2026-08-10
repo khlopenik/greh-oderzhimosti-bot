@@ -13,7 +13,7 @@
   // показывает его через кнопку меню, не перезагружая страницу) — поэтому одной
   // проверки версии при загрузке недостаточно: перепроверяем при каждом возврате
   // видимости/фокуса и вдобавок раз в 20 секунд, пока апп открыт.
-  var APP_VERSION='2026-08-10-07';
+  var APP_VERSION='2026-08-10-08';
   var checking=false;
   function checkVersion(){
     if(checking)return;
@@ -166,19 +166,6 @@
     align-items:flex-end;backdrop-filter:blur(2px)}
   .vnpanel{width:100%;padding:20px 16px 28px;background:rgba(28,14,24,.97);border-top:1px solid rgba(255,255,255,.08)}
   .vnpanel-title{font-size:16px;font-weight:700;color:#fff;margin-bottom:14px}
-  .vnend-screen{position:absolute;inset:0;z-index:25;display:flex;align-items:center;justify-content:center;
-    padding:24px;background:rgba(6,3,4,.86);backdrop-filter:blur(3px);animation:vnendfade .4s ease}
-  @keyframes vnendfade{from{opacity:0}to{opacity:1}}
-  .vnend-card{width:100%;max-width:300px;background:#170c10;border:1px solid rgba(255,255,255,.1);
-    border-radius:18px;padding:28px 22px 22px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.6);
-    animation:vnendpop .45s cubic-bezier(.2,1.4,.4,1)}
-  @keyframes vnendpop{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
-  .vnend-icon{width:58px;height:58px;line-height:58px;border-radius:50%;margin:0 auto 14px;
-    background:linear-gradient(135deg,#7a0d0d,#e2263f);color:#fff;font-size:28px;font-weight:700;
-    box-shadow:0 0 20px rgba(226,38,63,.6)}
-  .vnend-title{color:#fff;font-size:18px;font-weight:700;margin-bottom:16px}
-  .vnend-wait{color:#e8b9be;font-size:14px;font-style:italic;margin-bottom:16px;line-height:1.4}
-  .vnend-card .btn{margin-bottom:10px}
   .vnnote{position:absolute;top:14px;left:56px;z-index:6;background:rgba(0,0,0,.45);color:#e7d3d8;
     font-size:11px;padding:6px 10px;border-radius:8px;font-style:italic}
   .vnfade{position:absolute;left:0;right:0;bottom:0;z-index:2;height:38%;pointer-events:none;
@@ -448,6 +435,14 @@ window.libPlayFresh=id=>{
  try{localStorage.setItem('gr_progress',JSON.stringify(DB.progress||{}))}catch(e){}
  libPlay(id);
 };
+window.libRestartSeason=id=>{
+ const s=getStory(id);
+ const prog=DB.progress&&DB.progress[id];
+ const se=(prog&&s.seasons.find(x=>x.id===prog.se))||s.seasons[0];
+ if(!se||!se.episodes.length)return;
+ DB.active={st:id,se:se.id,ep:se.episodes[0].id};
+ node=null;libraryOpen=false;saveProgress();render();
+};
 function saveProgress(){
  // прогресс чтения — личное дело каждого устройства, не общая база
  if(!DB.progress)DB.progress={};
@@ -459,15 +454,19 @@ function episodeEndHTML(st,ep){
  const hasNext=!!nextEpisodeInfo();
  const nextBlock=hasNext
    ? `<button class="btn" onclick="event.stopPropagation();continueStory()">Продолжить</button>`
-   : `<div class="vnend-wait">${se&&se.nextDate?`Следующая серия выйдет ${esc(se.nextDate)}`:'Следующая серия скоро'}</div>`;
- return `<div class="vnend-screen" onclick="event.stopPropagation()">
-   <div class="vnend-card">
-     <div class="vnend-icon">✓</div>
-     <div class="vnend-title">${esc(ep.title||'Серия')} пройдена</div>
-     ${nextBlock}
-     <button class="btn ghost" onclick="event.stopPropagation();restartEpisode()">Пройти серию заново</button>
-     <button class="btn ghost" onclick="event.stopPropagation();restartSeason()">Пройти сезон заново</button>
-     <button class="btn ghost" onclick="event.stopPropagation();libOpen()">Вернуться в галерею</button>
+   : `<div class="desc" style="text-align:center;font-style:italic">${se&&se.nextDate?`Следующая серия выйдет ${esc(se.nextDate)}`:'Следующая серия скоро'}</div>`;
+ const bg=st.previewBg||st.cover||'';
+ const bgmode=!!st.previewBg;
+ return `<div class="libov" onclick="event.stopPropagation()">
+   <div class="libpv ${bgmode?'bgmode':''}" onclick="event.stopPropagation()" ${bgmode?`style="background-image:url(${bg})"`:''}>
+     ${bgmode?'':`<div class="cover" style="background-image:url(${bg})"></div>`}
+     <div class="body ${bgmode?'bgbody':''}">
+       <div class="epnum">✓ ${esc(ep.title||'Серия')} пройдена</div>
+       ${nextBlock}
+       <button class="btn ghost" style="margin-top:8px" onclick="event.stopPropagation();restartEpisode()">Пройти серию заново</button>
+       <button class="btn ghost" style="margin-top:8px" onclick="event.stopPropagation();restartSeason()">Пройти сезон заново</button>
+       <button class="btn ghost" style="margin-top:8px" onclick="event.stopPropagation();libOpen()">Вернуться в галерею</button>
+     </div>
    </div>
  </div>`;
 }
@@ -505,6 +504,7 @@ function libPreviewCard(s){
  const genres=(s.genre||'').split('·').map(g=>g.trim()).filter(Boolean);
  const playBtns = (ready&&prog)
    ? `<button class="btn" onclick="libPlay(${s.id})">Продолжить</button>
+      <button class="btn ghost" style="margin-top:8px" onclick="libRestartSeason(${s.id})">Пройти сезон заново</button>
       <button class="btn ghost" style="margin-top:8px" onclick="libPlayFresh(${s.id})">Начать сначала</button>`
    : `<button class="btn" onclick="libPlay(${s.id})">${ready?'Играть':'Скоро'}</button>`;
  if(s.previewBg)return `<div class="libov" onclick="libPreviewClose()">
