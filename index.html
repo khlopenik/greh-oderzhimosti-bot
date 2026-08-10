@@ -13,7 +13,7 @@
   // показывает его через кнопку меню, не перезагружая страницу) — поэтому одной
   // проверки версии при загрузке недостаточно: перепроверяем при каждом возврате
   // видимости/фокуса и вдобавок раз в 20 секунд, пока апп открыт.
-  var APP_VERSION='2026-08-10-04';
+  var APP_VERSION='2026-08-10-05';
   var checking=false;
   function checkVersion(){
     if(checking)return;
@@ -514,12 +514,18 @@ window.openWardrobe=()=>{overlay='wardrobe';render()};
 window.closeOverlay=()=>{overlay=null;render()};
 window.resetEpisodeProgress=()=>{
  if(!confirm('Начать эту серию заново с самого начала?'))return;
- overlay=null;restart();
+ overlay=null;restartEpisode();
+};
+window.resetSeasonProgress=()=>{
+ if(!confirm('Начать весь сезон заново с первой серии?'))return;
+ overlay=null;restartSeason();
 };
 function overlayHTML(){
  if(overlay==='settings')return `<div class="vnoverlay" onclick="closeOverlay()"><div class="vnpanel" onclick="event.stopPropagation()">
    <div class="vnpanel-title">Настройки</div>
-   <div class="vnchoice" onclick="resetEpisodeProgress()"><span>Сбросить прогресс серии</span></div>
+   <div class="vnchoice" onclick="resetEpisodeProgress()"><span>Пройти серию заново</span></div>
+   <div class="vnchoice" onclick="resetSeasonProgress()"><span>Пройти сезон заново</span></div>
+   <div class="vnchoice ghost" onclick="closeOverlay();libOpen()"><span>Вернуться в галерею</span></div>
    <div class="vnchoice ghost" onclick="closeOverlay()"><span>Закрыть</span></div>
  </div></div>`;
  if(overlay==='wardrobe')return `<div class="vnoverlay" onclick="closeOverlay()"><div class="vnpanel" onclick="event.stopPropagation()">
