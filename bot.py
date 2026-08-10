@@ -37,7 +37,10 @@ def mini_app():
 def main_keyboard():
     rows = [[KeyboardButton("🔄 Старт"), KeyboardButton("👤 Профиль")]]
     if APP_URL:
-        rows.append([KeyboardButton("📖 Приложение", web_app=WebAppInfo(url=APP_URL))])
+        # анти-кеш: свежий параметр на каждый показ клавиатуры, иначе Telegram WebView
+        # держит старую версию сайта и правки/фиксы не долетают до игрока
+        fresh_url = f"{APP_URL}{'&' if '?' in APP_URL else '?'}v={int(time.time())}"
+        rows.append([KeyboardButton("📖 Приложение", web_app=WebAppInfo(url=fresh_url))])
     return ReplyKeyboardMarkup(rows, resize_keyboard=True)
 
 

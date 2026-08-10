@@ -3,7 +3,39 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Прототип · ИИ-новелла</title>
+<script>
+(function(){
+  // Telegram часто держит открытый WebView живым между заходами (просто скрывает/
+  // показывает его через кнопку меню, не перезагружая страницу) — поэтому одной
+  // проверки версии при загрузке недостаточно: перепроверяем при каждом возврате
+  // видимости/фокуса и вдобавок раз в 20 секунд, пока апп открыт.
+  var APP_VERSION='2026-08-10-01';
+  var checking=false;
+  function checkVersion(){
+    if(checking)return;
+    checking=true;
+    fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
+      checking=false;
+      if(d&&d.v&&d.v!==APP_VERSION){
+        var u=new URL(location.href);
+        u.searchParams.set('_v',d.v);
+        location.replace(u.toString());
+      }
+    }).catch(function(){checking=false;});
+  }
+  try{
+    checkVersion();
+    document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')checkVersion();});
+    window.addEventListener('focus',checkVersion);
+    window.addEventListener('pageshow',checkVersion);
+    setInterval(checkVersion,20000);
+  }catch(e){}
+})();
+</script>
 <style>
   :root{--pink:#D4537E;--pink-soft:#FBEAF0;--pink-deep:#993556;--purple:#534AB7;--purple-soft:#EEEDFE;
     --gold:#BA7517;--gold-soft:#FAEEDA;--ink:#2C2C2A;--muted:#888780;--line:#ece9f0;--bg:#faf7fa;}
