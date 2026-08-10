@@ -13,7 +13,7 @@
   // показывает его через кнопку меню, не перезагружая страницу) — поэтому одной
   // проверки версии при загрузке недостаточно: перепроверяем при каждом возврате
   // видимости/фокуса и вдобавок раз в 20 секунд, пока апп открыт.
-  var APP_VERSION='2026-08-10-03';
+  var APP_VERSION='2026-08-10-04';
   var checking=false;
   function checkVersion(){
     if(checking)return;
@@ -149,12 +149,12 @@
   .vnbg{position:absolute;inset:0;background-size:cover;background-position:center}
   video.vnbg{width:100%;height:100%;object-fit:cover}
   /* Фигура внутри портрета стоит не по центру кадра, а примерно на 66% его ширины.
-     Поэтому мало прижать саму картинку к краю — надо сдвинуть её так, чтобы на 27%/73%
-     ширины экрана оказался сам человек. Бокс = 66.7vh шириной (height:100% при 2:3),
-     отсюда формулы ниже. Работает одинаково на любом соотношении экрана. */
+     Поэтому мало прижать саму картинку к краю — надо сдвинуть её так, чтобы на 33%/67%
+     ширины экрана оказался сам человек (27% обрезало руку, взяли с запасом). Бокс = 66.7vh
+     шириной (height:100% при 2:3), отсюда формулы ниже. Работает на любом соотношении экрана. */
   .vnchar{position:absolute;bottom:0;height:100%;aspect-ratio:2/3;object-fit:cover;pointer-events:none}
-  .vnchar.pos-left{left:calc(27% - 43.9vh)}
-  .vnchar.pos-right{right:calc(27% - 22.7vh)}
+  .vnchar.pos-left{left:calc(33% - 43.9vh)}
+  .vnchar.pos-right{right:calc(33% - 22.7vh)}
   .vnchar.pos-center{position:absolute;bottom:0;left:50%;height:100%;width:auto;aspect-ratio:auto;
     transform:translateX(-50%);object-fit:contain;object-position:bottom center;pointer-events:none}
   .vnback{position:absolute;top:12px;left:12px;z-index:6;width:34px;height:34px;border-radius:50%;
@@ -575,7 +575,9 @@ function renderStory(){
  } else if(!choices.length){
    /* конец серии — итоговый экран */
    const hasNext=!!nextEpisodeInfo();
-   h+=`<div class="vnchoice" onclick="event.stopPropagation();continueStory()"><span>${hasNext?'Продолжить':'Пройти заново'}</span></div>`;
+   if(hasNext)h+=`<div class="vnchoice" onclick="event.stopPropagation();continueStory()"><span>Продолжить</span></div>`;
+   h+=`<div class="vnchoice ghost" onclick="event.stopPropagation();restartEpisode()"><span>Пройти серию заново</span></div>`;
+   h+=`<div class="vnchoice ghost" onclick="event.stopPropagation();restartSeason()"><span>Пройти сезон заново</span></div>`;
    h+=`<div class="vnchoice ghost" onclick="event.stopPropagation();libOpen()"><span>Вернуться в галерею</span></div>`;
  } else {
    choices.forEach(c=>{
@@ -607,6 +609,14 @@ function preloadUpcoming(ep,n,st,choices,tapTarget){
 }
 window.goNode=id=>{node=id;saveProgress();render()};
 window.restart=()=>{node=activeEp().start;saveProgress();render()};
+window.restartEpisode=()=>window.restart();
+window.restartSeason=()=>{
+ const st=getStory(DB.active.st);
+ const se=st&&st.seasons.find(x=>x.id===DB.active.se);
+ const firstEp=se&&se.episodes[0];
+ if(!firstEp)return;
+ DB.active.ep=firstEp.id;node=null;saveProgress();render();
+};
 
 /* ================= АДМИНКА ================= */
 let nav={st:null,se:null,ep:null,sc:null}, showNew=false;
