@@ -13,7 +13,7 @@
   // показывает его через кнопку меню, не перезагружая страницу) — поэтому одной
   // проверки версии при загрузке недостаточно: перепроверяем при каждом возврате
   // видимости/фокуса и вдобавок раз в 20 секунд, пока апп открыт.
-  var APP_VERSION='2026-08-10-05';
+  var APP_VERSION='2026-08-10-06';
   var checking=false;
   function checkVersion(){
     if(checking)return;
@@ -153,7 +153,7 @@
      ширины экрана оказался сам человек (27% обрезало руку, взяли с запасом). Бокс = 66.7vh
      шириной (height:100% при 2:3), отсюда формулы ниже. Работает на любом соотношении экрана. */
   .vnchar{position:absolute;bottom:0;height:100%;aspect-ratio:2/3;object-fit:cover;pointer-events:none}
-  .vnchar.pos-left{left:calc(33% - 43.9vh)}
+  .vnchar.pos-left{left:calc(38% - 43.9vh)}
   .vnchar.pos-right{right:calc(33% - 22.7vh)}
   .vnchar.pos-center{position:absolute;bottom:0;left:50%;height:100%;width:auto;aspect-ratio:auto;
     transform:translateX(-50%);object-fit:contain;object-position:bottom center;pointer-events:none}
@@ -430,6 +430,11 @@ window.libPlay=id=>{
  node=(prog&&prog.ep===ep.id)?prog.node:null;
  libraryOpen=false;saveProgress();render();
 };
+window.libPlayFresh=id=>{
+ if(DB.progress)delete DB.progress[id];
+ try{localStorage.setItem('gr_progress',JSON.stringify(DB.progress||{}))}catch(e){}
+ libPlay(id);
+};
 function saveProgress(){
  // прогресс чтения — личное дело каждого устройства, не общая база
  if(!DB.progress)DB.progress={};
@@ -468,6 +473,10 @@ function libPreviewCard(s){
  if(prog&&se){const i=se.episodes.findIndex(e=>e.id===prog.ep);if(i>=0)epNum=i+1}
  const ready=s.seasons.some(x=>x.episodes.some(e=>e.scenes.length));
  const genres=(s.genre||'').split('·').map(g=>g.trim()).filter(Boolean);
+ const playBtns = (ready&&prog)
+   ? `<button class="btn" onclick="libPlay(${s.id})">Продолжить</button>
+      <button class="btn ghost" style="margin-top:8px" onclick="libPlayFresh(${s.id})">Начать сначала</button>`
+   : `<button class="btn" onclick="libPlay(${s.id})">${ready?'Играть':'Скоро'}</button>`;
  if(s.previewBg)return `<div class="libov" onclick="libPreviewClose()">
    <div class="libpv bgmode" onclick="event.stopPropagation()" style="background-image:url(${s.previewBg})">
      <div class="closex" onclick="libPreviewClose()">✕</div>
@@ -475,7 +484,7 @@ function libPreviewCard(s){
        <div class="epnum">Серия ${epNum}/${total>1?total:'X'} (Сезон 1)</div>
        ${genres.length?`<div class="genres">${genres.map(g=>`<span>${esc(g)}</span>`).join('')}</div>`:''}
        <div class="desc">${esc(s.desc||'')}</div>
-       <button class="btn" onclick="libPlay(${s.id})">${ready?'Играть':'Скоро'}</button>
+       ${playBtns}
      </div>
    </div>
  </div>`;
@@ -486,7 +495,7 @@ function libPreviewCard(s){
        <div class="epnum">Серия ${epNum}/${total>1?total:'X'} (Сезон 1)</div>
        ${genres.length?`<div class="genres">${genres.map(g=>`<span>${esc(g)}</span>`).join('')}</div>`:''}
        <div class="desc">${esc(s.desc||'')}</div>
-       <button class="btn" onclick="libPlay(${s.id})">${ready?'Играть':'Скоро'}</button>
+       ${playBtns}
      </div>
    </div>
  </div>`;
