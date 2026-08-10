@@ -116,10 +116,11 @@
   .vn.hasbg{background-image:none}
   .vnbg{position:absolute;inset:0;background-size:cover;background-position:center}
   video.vnbg{width:100%;height:100%;object-fit:cover}
-  .vnchar{position:absolute;bottom:-4%;height:150%;aspect-ratio:2/3;object-fit:cover;pointer-events:none}
+  .vnchar{position:absolute;bottom:0;height:100%;aspect-ratio:2/3;object-fit:cover;pointer-events:none}
   .vnchar.pos-left{left:0;transform:scaleX(-1)}
   .vnchar.pos-right{right:0}
-  .vnchar.pos-center{left:50%;height:170%;transform:translateX(-50%);object-fit:contain;object-position:bottom center}
+  .vnchar.pos-center{position:absolute;bottom:0;left:50%;height:100%;width:auto;aspect-ratio:auto;
+    transform:translateX(-50%);object-fit:contain;object-position:bottom center;pointer-events:none}
   .vnback{position:absolute;top:12px;left:12px;z-index:6;width:34px;height:34px;border-radius:50%;
     background:rgba(0,0,0,.45);color:#fff;font-size:20px;line-height:34px;text-align:center;cursor:pointer;backdrop-filter:blur(3px)}
   .vnicons{position:absolute;top:12px;right:12px;z-index:6;display:flex;gap:8px}
@@ -154,45 +155,22 @@
   .vnchoice.ghost span{background:rgba(30,20,26,.75);border:1px solid rgba(255,255,255,.18)}
   .vntap{align-self:center;color:rgba(255,255,255,.55);font-size:12px;font-style:italic;padding-top:2px}
 
-  #splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    background:#0a0505;color:#fff;transition:opacity .5s ease;text-align:center;padding:16px}
+  #splash{position:fixed;inset:0;z-index:9999;color:#fff;transition:opacity .5s ease;text-align:center;
+    background:#0a0505 url(static/bg/app-splash.png) center/cover no-repeat}
   #splash.hide{opacity:0;pointer-events:none}
-  #splash .splash-art{max-width:100%;max-height:66vh;object-fit:contain;flex-shrink:0}
-  #splash .loadcard{width:calc(100% - 24px);max-width:280px;margin-top:22px;padding:14px 18px 16px;
-    background:rgba(20,10,12,.55);border-radius:16px;box-shadow:0 6px 20px rgba(0,0,0,.4);flex-shrink:0}
-  #splash .snakebar{width:100%;height:26px;display:block;overflow:visible}
-  #splash .pctrow{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px}
-  #splash .spinner{width:12px;height:12px;border-radius:50%;border:2px solid rgba(255,255,255,.25);
-    border-top-color:#fff;animation:splashspin .7s linear infinite}
-  @keyframes splashspin{to{transform:rotate(360deg)}}
-  #splash .pct{font-size:13px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8)}
-  #splash .hint{font-size:12px;color:#e8b9be;min-height:16px;font-style:italic;text-shadow:0 1px 4px rgba(0,0,0,.8);margin-top:6px}
+  #splash .loadbar{position:absolute;left:0;right:0;bottom:0;padding:16px 20px max(20px,4%);
+    background:linear-gradient(to top,rgba(4,2,2,.96) 55%,transparent)}
+  #splash .segs{display:flex;gap:5px;justify-content:center;margin-bottom:10px}
+  #splash .seg{width:14px;height:8px;border-radius:2px;background:rgba(255,255,255,.15);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);transition:background .15s}
+  #splash .seg.on{background:linear-gradient(180deg,#e2263f,#7a0d0d);box-shadow:0 0 6px rgba(226,38,63,.7)}
+  #splash .hint{font-size:13px;color:#e8b9be;min-height:16px;font-style:italic;text-shadow:0 1px 4px rgba(0,0,0,.8)}
 </style>
 </head>
 <body>
 <div id="splash">
-  <img class="splash-art" src="static/bg/app-splash.png">
-  <div class="loadcard">
-    <svg class="snakebar" viewBox="0 0 260 26" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="snakeGrad" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stop-color="#5a0d0d"/>
-          <stop offset="100%" stop-color="#e2263f"/>
-        </linearGradient>
-      </defs>
-      <path class="snaketrack" d="M10,13 Q35,0 60,13 T110,13 T160,13 T210,13 T250,13"
-        fill="none" stroke="rgba(255,255,255,.15)" stroke-width="4" stroke-linecap="round"/>
-      <path id="snakeFill" d="M10,13 Q35,0 60,13 T110,13 T160,13 T210,13 T250,13"
-        fill="none" stroke="url(#snakeGrad)" stroke-width="5" stroke-linecap="round"/>
-      <g id="snakeHead">
-        <ellipse cx="1" cy="0" rx="7" ry="5" fill="#e2263f"/>
-        <line x1="7" y1="0" x2="13" y2="-1.5" stroke="#3a0507" stroke-width="1"/>
-        <line x1="7" y1="0" x2="13" y2="1.5" stroke="#3a0507" stroke-width="1"/>
-        <circle cx="2" cy="-2" r="1" fill="#1a0304"/>
-        <circle cx="2" cy="2" r="1" fill="#1a0304"/>
-      </g>
-    </svg>
-    <div class="pctrow"><div class="spinner"></div><div class="pct" id="splashPct">0%</div></div>
+  <div class="loadbar">
+    <div class="segs" id="splashSegs"></div>
     <div class="hint" id="splashHint">загружаем историю…</div>
   </div>
 </div>
@@ -884,49 +862,29 @@ async function bootDB(){
 }
 bootDB();
 
-/* ---------- заставка загрузки: змея ползёт по волне, держит процент реального этапа, не гаснет пока не загружено ---------- */
+/* ---------- заставка загрузки: сегменты-«колбочка» заполняются, не гаснет пока не загружено ---------- */
 (function(){
-  const pctEl=document.getElementById('splashPct'),
-        hintEl=document.getElementById('splashHint'), splash=document.getElementById('splash'),
-        track=document.querySelector('.snaketrack'), fillPath=document.getElementById('snakeFill'),
-        head=document.getElementById('snakeHead');
+  const hintEl=document.getElementById('splashHint'), splash=document.getElementById('splash'),
+        segsEl=document.getElementById('splashSegs');
+  const N=16;
+  segsEl.innerHTML=Array.from({length:N}).map(()=>'<div class="seg"></div>').join('');
+  const segs=segsEl.querySelectorAll('.seg');
   const hints=["загружаем историю…","готовим локации…","знакомим с героями…","почти готово…"];
-  let pct=0, hi=0, phase=0;
+  let pct=0, hi=0;
   hintEl.textContent=hints[0];
   const hintTimer=setInterval(()=>{hi=(hi+1)%hints.length;hintEl.textContent=hints[hi]},550);
-
-  function waveD(ph){
-    const pts=[];
-    for(let x=0;x<=260;x+=8){
-      const y=13+9*Math.sin(x/26+ph);
-      pts.push(x.toFixed(1)+','+y.toFixed(2));
-    }
-    return 'M'+pts.join(' L');
-  }
 
   const tick=setInterval(()=>{
     const cap=window.__loadStage||5;
     pct=Math.min(cap,pct+(1+Math.random()*4));
-    pctEl.textContent=Math.floor(pct)+'%';
-
-    phase+=0.22;
-    const d=waveD(phase);
-    track.setAttribute('d',d);
-    fillPath.setAttribute('d',d);
-    const len=fillPath.getTotalLength();
-    fillPath.style.strokeDasharray=len+' '+len;
-    fillPath.style.strokeDashoffset=len*(1-pct/100);
-    const at=Math.max(0,Math.min(len,len*pct/100));
-    const p=fillPath.getPointAtLength(at);
-    const p2=fillPath.getPointAtLength(Math.max(0,at-2));
-    const angle=Math.atan2(p.y-p2.y,p.x-p2.x)*180/Math.PI;
-    head.setAttribute('transform','translate('+p.x+','+p.y+') rotate('+angle+')');
+    const lit=Math.round(pct/100*N);
+    segs.forEach((s,i)=>s.classList.toggle('on',i<lit));
 
     if(window.__dbReady&&pct>=100){
       clearInterval(tick);clearInterval(hintTimer);
       setTimeout(()=>{splash.classList.add('hide');setTimeout(()=>splash.remove(),550)},250);
     }
-  },70);
+  },90);
 })();
 </script>
 </body>
