@@ -13,7 +13,7 @@
   // показывает его через кнопку меню, не перезагружая страницу) — поэтому одной
   // проверки версии при загрузке недостаточно: перепроверяем при каждом возврате
   // видимости/фокуса и вдобавок раз в 20 секунд, пока апп открыт.
-  var APP_VERSION='2026-08-11-02';
+  var APP_VERSION='2026-08-11-03';
   var checking=false;
   function checkVersion(){
     if(checking)return;
@@ -199,6 +199,13 @@
   .vnchoice.dia span{background:rgba(120,75,20,.92)}
   .vnchoice.ghost span{background:rgba(30,20,26,.75);border:1px solid rgba(255,255,255,.18)}
   .vntap{align-self:center;color:rgba(255,255,255,.55);font-size:12px;font-style:italic;padding-top:2px}
+  .vnchoice-gallery{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 8px}
+  .vnchoice-card{flex:0 0 118px;border-radius:14px;overflow:hidden;cursor:pointer;
+    border:2px solid rgba(255,255,255,.25);box-shadow:0 6px 16px rgba(0,0,0,.4);background:#1c1618}
+  .vnchoice-card img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover}
+  .vnchoice-card-noimg{width:100%;aspect-ratio:3/4;background:var(--purple-soft)}
+  .vnchoice-card-cap{padding:7px 8px;color:#fff;font-size:12.5px;font-weight:600;text-align:center;
+    background:rgba(50,16,30,.92)}
 
   #splash{position:fixed;inset:0;z-index:9999;color:#fff;transition:opacity .5s ease;text-align:center;
     background:#0a0505 url(static/bg/app-splash.png) center/cover no-repeat}
@@ -333,7 +340,7 @@ async function loadDB(){
     let choicesByScene={};
     if(sceneIds.length){
      const {data:choices}=await sb.from('gr_choices').select('*').in('scene_id',sceneIds).order('ord');
-     (choices||[]).forEach(c=>{(choicesByScene[c.scene_id]=choicesByScene[c.scene_id]||[]).push({t:c.txt,go:c.go,type:c.ctype,cost:c.cost})});
+     (choices||[]).forEach(c=>{(choicesByScene[c.scene_id]=choicesByScene[c.scene_id]||[]).push({t:c.txt,go:c.go,type:c.ctype,cost:c.cost,img:c.img_url})});
     }
     episodesOut.push({id:ep.id,title:ep.title,start:ep.start_scene,scenes:(scenes||[]).map(sc=>({
      id:sc.id,speaker:sc.speaker,illo:sc.illo,bg:sc.bg_url,loc:sc.loc_id,text:sc.scene_text,endnote:sc.endnote,charPos:sc.char_pos||'',
@@ -412,7 +419,7 @@ async function save(){
       const sceneIds=ep.scenes.map(sc=>sc.id);
       await sb.from('gr_choices').delete().in('scene_id',sceneIds);
       const choiceRows=[];
-      ep.scenes.forEach(sc=>(sc.choices||[]).forEach((c,i)=>choiceRows.push({scene_id:sc.id,txt:c.t,go:c.go,ctype:c.type||'free',cost:c.cost||null,ord:i})));
+      ep.scenes.forEach(sc=>(sc.choices||[]).forEach((c,i)=>choiceRows.push({scene_id:sc.id,txt:c.t,go:c.go,ctype:c.type||'free',cost:c.cost||null,img_url:c.img||null,ord:i})));
       if(choiceRows.length)await sb.from('gr_choices').insert(choiceRows);
      }
     }
@@ -678,6 +685,18 @@ function renderStory(){
    h+=`<div class="vntap">тронь экран, чтобы продолжить ›</div>`;
  } else if(!choices.length){
    h+=episodeEndHTML(st,ep);
+ } else if(choices.some(c=>c.img)){
+   /* визуальный выбор — комната/наряд/герой картинками, а не текстовыми плашками */
+   h+=`<div class="vnchoice-gallery">`;
+   choices.forEach(c=>{
+    const act = c.go==='__restart' ? `restart()` : `goNode('${c.go}')`;
+    const dia = c.type==='dia';
+    h+=`<div class="vnchoice-card" onclick="event.stopPropagation();${act}">
+      ${c.img?`<img src="${c.img}">`:'<div class="vnchoice-card-noimg"></div>'}
+      <div class="vnchoice-card-cap">${dia?`💎 ${c.cost||0} · `:''}${esc(c.t)}</div>
+    </div>`;
+   });
+   h+=`</div>`;
  } else {
    choices.forEach(c=>{
     const act = c.go==='__restart' ? `restart()` : `goNode('${c.go}')`;
@@ -1000,8 +1019,16 @@ function choiceRow(c,i,opts){
    <select data-ci="${i}" data-k="type"><option value="free" ${c.type!=='dia'?'selected':''}>Бесплатный</option><option value="dia" ${c.type==='dia'?'selected':''}>💎 Алмазный</option></select>
   </div>
   <input data-ci="${i}" data-k="cost" value="${c.cost||''}" placeholder="цена в 💎 (для алмазного)" inputmode="numeric">
+  <input type="hidden" data-ci="${i}" data-k="img" value="${esc(c.img||'')}">
+  <div class="row" style="margin-top:6px">
+   ${c.img?`<img src="${c.img}" style="width:46px;height:62px;object-fit:cover;border-radius:8px">`:'<div style="width:46px;height:62px;border-radius:8px;background:var(--purple-soft)"></div>'}
+   <label class="btn sm ghost dropzone" style="cursor:pointer;display:inline-block" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="onDropZone(event)">Картинка выбора (комната/наряд/герой)<input type="file" accept="image/*" style="display:none" onchange="upChoiceImg(this,${i})"></label>
+   ${c.img?`<span class="del" onclick="clrChoiceImg(${i})">убрать</span>`:''}
+  </div>
   <div class="del" onclick="rmChoice(${i})">удалить выбор</div></div>`;
 }
+window.upChoiceImg=(inp,i)=>uploadImg(inp,url=>{pullScene();nScene().choices[i].img=url;save();renderAdmin()});
+window.clrChoiceImg=i=>{pullScene();nScene().choices[i].img='';save();renderAdmin()};
 window.backScene=()=>{nav.sc=null;renderAdmin()};
 window.upBg=inp=>uploadImg(inp,url=>{nScene().bg=url;save();renderAdmin()});
 window.clrBg=()=>{nScene().bg=null;save();renderAdmin()};
