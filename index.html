@@ -13,7 +13,7 @@
   // показывает его через кнопку меню, не перезагружая страницу) — поэтому одной
   // проверки версии при загрузке недостаточно: перепроверяем при каждом возврате
   // видимости/фокуса и вдобавок раз в 20 секунд, пока апп открыт.
-  var APP_VERSION='2026-08-10-08';
+  var APP_VERSION='2026-08-10-09';
   var checking=false;
   function checkVersion(){
     if(checking)return;
@@ -430,10 +430,14 @@ window.libPlay=id=>{
  node=(prog&&prog.ep===ep.id)?prog.node:null;
  libraryOpen=false;saveProgress();render();
 };
-window.libPlayFresh=id=>{
- if(DB.progress)delete DB.progress[id];
- try{localStorage.setItem('gr_progress',JSON.stringify(DB.progress||{}))}catch(e){}
- libPlay(id);
+window.libRestartEpisode=id=>{
+ const s=getStory(id);
+ const prog=DB.progress&&DB.progress[id];
+ const se=(prog&&s.seasons.find(x=>x.id===prog.se))||s.seasons[0];
+ const ep=(prog&&se&&se.episodes.find(x=>x.id===prog.ep))||(se&&se.episodes[0]);
+ if(!se||!ep)return;
+ DB.active={st:id,se:se.id,ep:ep.id};
+ node=null;libraryOpen=false;saveProgress();render();
 };
 window.libRestartSeason=id=>{
  const s=getStory(id);
@@ -504,8 +508,8 @@ function libPreviewCard(s){
  const genres=(s.genre||'').split('·').map(g=>g.trim()).filter(Boolean);
  const playBtns = (ready&&prog)
    ? `<button class="btn" onclick="libPlay(${s.id})">Продолжить</button>
-      <button class="btn ghost" style="margin-top:8px" onclick="libRestartSeason(${s.id})">Пройти сезон заново</button>
-      <button class="btn ghost" style="margin-top:8px" onclick="libPlayFresh(${s.id})">Начать сначала</button>`
+      <button class="btn ghost" style="margin-top:8px" onclick="libRestartEpisode(${s.id})">Пройти серию ${epNum} заново</button>
+      <button class="btn ghost" style="margin-top:8px" onclick="libRestartSeason(${s.id})">Пройти сезон заново</button>`
    : `<button class="btn" onclick="libPlay(${s.id})">${ready?'Играть':'Скоро'}</button>`;
  if(s.previewBg)return `<div class="libov" onclick="libPreviewClose()">
    <div class="libpv bgmode" onclick="event.stopPropagation()" style="background-image:url(${s.previewBg})">
