@@ -13,7 +13,7 @@
   // показывает его через кнопку меню, не перезагружая страницу) — поэтому одной
   // проверки версии при загрузке недостаточно: перепроверяем при каждом возврате
   // видимости/фокуса и вдобавок раз в 20 секунд, пока апп открыт.
-  var APP_VERSION='2026-08-11-06';
+  var APP_VERSION='2026-08-11-07';
   var checking=false;
   window.__pendingVersion=null;
   function isMidStory(){
@@ -685,7 +685,13 @@ function renderStory(){
  if(!bgUrl&&n.illo)h+=`<div class="vnnote">арт: ${esc(n.illo)}</div>`;
  const autoPos=(castMember&&castMember.pos)||'right';
  const finalPos=n.charPos||autoPos;
- if(finalPos!=='none'&&castMember&&castMember.img)h+=`<img class="vnchar pos-${finalPos}" src="${castMember.img}">`;
+ if(finalPos!=='none'&&castMember&&castMember.img){
+  // у части персонажей силуэт на портрете шире (Далтон/Бет/Режисёр) — им нельзя сдвигаться
+  // правее без обрезки на высоких экранах, поэтому сдвиг вправо только там, где есть запас
+  const rightC=({c5:35.3,c2:32.9,c4:33.1})[castMember.id];
+  const styleAttr=(finalPos==='right'&&rightC)?` style="right:calc(32% - ${rightC}vh)"`:'';
+  h+=`<img class="vnchar pos-${finalPos}" src="${castMember.img}"${styleAttr}>`;
+ }
  h+=`<div class="vnfade"></div>`;
 
  h+=`<div class="vnui">`;
