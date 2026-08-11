@@ -13,7 +13,7 @@
   // показывает его через кнопку меню, не перезагружая страницу) — поэтому одной
   // проверки версии при загрузке недостаточно: перепроверяем при каждом возврате
   // видимости/фокуса и вдобавок раз в 20 секунд, пока апп открыт.
-  var APP_VERSION='2026-08-10-11';
+  var APP_VERSION='2026-08-10-12';
   var checking=false;
   function checkVersion(){
     if(checking)return;
@@ -950,7 +950,11 @@ function admScene(){
   <div class="field" style="margin-top:12px"><label>Локация (фон из библиотеки истории)</label><select id="e_loc"><option value="">— без локации —</option>${(nStory().locations||[]).map(l=>`<option value="${l.id}" ${sc.loc===l.id?'selected':''}>${esc(l.name)}</option>`).join('')}</select></div>
   <div class="field dropzone" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="onDropZone(event)"><label>Или своя картинка/видео сцены (перебивает локацию)</label><input type="file" accept="image/*,video/*" onchange="upBg(this)"><div class="dropzone-hint">или перетащи файл сюда</div>${sc.bg?'<div class="del" onclick="clrBg()" style="margin-top:6px">убрать картинку/видео</div>':''}</div>
   <div class="field"><label>Описание арта (если фона нет)</label><input id="e_illo" value="${esc(sc.illo)}" placeholder="дождь, бар, взгляд альфы"></div>
-  <div class="field"><label>Кто говорит (пусто = от автора)</label><input id="e_sp" value="${esc(sc.speaker)}" placeholder="Рэн / ??? / (пусто)"></div>
+  <div class="field"><label>Кто говорит</label>
+   <select id="e_sp">
+    <option value="" ${!sc.speaker?'selected':''}>— от автора (без имени) —</option>
+    ${nStory().cast.map(c=>`<option value="${esc(c.name)}" ${sc.speaker===c.name?'selected':''}>${esc(c.name)}</option>`).join('')}
+   </select></div>
   <div class="field"><label>Портрет говорящего в этой сцене</label>
    <select id="e_charpos">
     <option value="" ${!sc.charPos?'selected':''}>Автоматически (как задано у персонажа)</option>
