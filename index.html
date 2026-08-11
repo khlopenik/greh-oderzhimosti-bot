@@ -13,7 +13,7 @@
   // показывает его через кнопку меню, не перезагружая страницу) — поэтому одной
   // проверки версии при загрузке недостаточно: перепроверяем при каждом возврате
   // видимости/фокуса и вдобавок раз в 20 секунд, пока апп открыт.
-  var APP_VERSION='2026-08-11-05';
+  var APP_VERSION='2026-08-11-06';
   var checking=false;
   window.__pendingVersion=null;
   function isMidStory(){
@@ -186,6 +186,7 @@
   .vnicons{position:absolute;top:12px;right:12px;z-index:6;display:flex;gap:8px}
   .vnicon{width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;font-size:16px;
     line-height:34px;text-align:center;cursor:pointer;backdrop-filter:blur(3px)}
+  .vnicon img{width:19px;height:19px;object-fit:contain;vertical-align:middle;margin-top:7px}
   .vnoverlay{position:absolute;inset:0;z-index:20;background:rgba(10,5,8,.72);display:flex;
     align-items:flex-end;backdrop-filter:blur(2px)}
   .vnpanel{width:100%;padding:20px 16px 28px;background:rgba(28,14,24,.97);border-top:1px solid rgba(255,255,255,.08)}
@@ -676,9 +677,9 @@ function renderStory(){
  else if(bgUrl)h+=`<div class="vnbg" style="background-image:url(${bgUrl})"></div>`;
  h+=`<div class="vnback" onclick="event.stopPropagation();libOpen()">‹</div>`;
  h+=`<div class="vnicons">
-   <div class="vnicon" onclick="event.stopPropagation();libOpen()" title="В галерею">🏠</div>
-   <div class="vnicon" onclick="event.stopPropagation();openWardrobe()" title="Внешность">👗</div>
-   <div class="vnicon" onclick="event.stopPropagation();openSettings()" title="Настройки">⚙️</div>
+   <div class="vnicon" onclick="event.stopPropagation();libOpen()" title="В галерею"><img src="https://omiomgwwjuudjqjdggdk.supabase.co/storage/v1/object/public/gr-media/icons/home.png"></div>
+   <div class="vnicon" onclick="event.stopPropagation();openWardrobe()" title="Внешность"><img src="https://omiomgwwjuudjqjdggdk.supabase.co/storage/v1/object/public/gr-media/icons/wardrobe.png"></div>
+   <div class="vnicon" onclick="event.stopPropagation();openSettings()" title="Настройки"><img src="https://omiomgwwjuudjqjdggdk.supabase.co/storage/v1/object/public/gr-media/icons/settings.png"></div>
  </div>`;
  if(overlay)h+=overlayHTML();
  if(!bgUrl&&n.illo)h+=`<div class="vnnote">арт: ${esc(n.illo)}</div>`;
