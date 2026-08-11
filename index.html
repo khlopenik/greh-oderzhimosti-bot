@@ -13,24 +13,37 @@
   // показывает его через кнопку меню, не перезагружая страницу) — поэтому одной
   // проверки версии при загрузке недостаточно: перепроверяем при каждом возврате
   // видимости/фокуса и вдобавок раз в 20 секунд, пока апп открыт.
-  var APP_VERSION='2026-08-11-04';
+  var APP_VERSION='2026-08-11-05';
   var checking=false;
+  window.__pendingVersion=null;
+  function isMidStory(){
+    // не дёргаем перезагрузку прямо посреди чтения сцены — только когда игрок в галерее
+    try{ return typeof libraryOpen!=='undefined' && !libraryOpen && typeof tab!=='undefined' && tab==='story'; }
+    catch(e){ return false; }
+  }
+  function applyPendingReload(){
+    if(!window.__pendingVersion)return;
+    if(isMidStory())return; // подождём, пока игрок сам не выйдет в галерею
+    var u=new URL(location.href);
+    u.searchParams.set('_v',window.__pendingVersion);
+    location.replace(u.toString());
+  }
+  window.__applyPendingReload=applyPendingReload;
   function checkVersion(){
     if(checking)return;
     checking=true;
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       checking=false;
       if(d&&d.v&&d.v!==APP_VERSION){
-        var u=new URL(location.href);
-        u.searchParams.set('_v',d.v);
-        location.replace(u.toString());
+        window.__pendingVersion=d.v;
+        applyPendingReload();
       }
     }).catch(function(){checking=false;});
   }
   try{
     checkVersion();
-    document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')checkVersion();});
-    window.addEventListener('focus',checkVersion);
+    document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){checkVersion();applyPendingReload();}});
+    window.addEventListener('focus',function(){checkVersion();applyPendingReload();});
     window.addEventListener('pageshow',checkVersion);
     setInterval(checkVersion,20000);
   }catch(e){}
@@ -349,7 +362,7 @@ async function loadDB(){
      choices:choicesByScene[sc.id]||[],
     }))});
    }
-   seasonsOut.push({id:se.id,title:se.title,nextDate:se.next_date||'',episodes:episodesOut});
+   seasonsOut.push({id:se.id,title:se.title,nextDate:se.next_date||'',totalEpisodes:se.total_episodes||null,episodes:episodesOut});
   }
   out.push({
    id:s.id,title:s.title,genre:s.genre,cover:s.cover_url,previewBg:s.preview_bg_url,desc:s.description,
@@ -395,7 +408,7 @@ async function save(){
    for(const os of (oldSeasons||[]))if(!keepSe.includes(os.id))await sb.from('gr_seasons').delete().eq('id',os.id);
 
    for(const [si,se] of s.seasons.entries()){
-    await sb.from('gr_seasons').upsert({id:se.id,story_id:s.id,title:se.title,next_date:se.nextDate||null,ord:si});
+    await sb.from('gr_seasons').upsert({id:se.id,story_id:s.id,title:se.title,next_date:se.nextDate||null,total_episodes:se.totalEpisodes||null,ord:si});
 
     if(!se.episodes.length&&await remoteHasRows('gr_episodes','season_id',se.id)){
      blocked.push('серии сезона «'+se.title+'»');
@@ -476,7 +489,7 @@ function render(){
 /* ---------- библиотека историй ---------- */
 let libraryOpen=true, libTab='new';
 window.libSet=t=>{libTab=t;renderLibrary()};
-window.libOpen=()=>{libraryOpen=true;overlay=null;render()};
+window.libOpen=()=>{libraryOpen=true;overlay=null;render();if(window.__applyPendingReload)window.__applyPendingReload()};
 window.libPlay=id=>{
  const s=getStory(id);
  const prog=DB.progress&&DB.progress[id];
@@ -559,7 +572,8 @@ window.libPreviewClose=()=>{previewId=null;renderLibrary()};
 function libPreviewCard(s){
  const prog=DB.progress&&DB.progress[s.id];
  const se=s.seasons[0];
- const total=se?se.episodes.length:0;
+ const seasonNum=se?s.seasons.indexOf(se)+1:1;
+ const total=se?(se.totalEpisodes||se.episodes.length||1):1;
  let epNum=1;
  if(prog&&se){const i=se.episodes.findIndex(e=>e.id===prog.ep);if(i>=0)epNum=i+1}
  const ready=s.seasons.some(x=>x.episodes.some(e=>e.scenes.length));
@@ -573,7 +587,7 @@ function libPreviewCard(s){
    <div class="libpv bgmode" onclick="event.stopPropagation()" style="background-image:url(${s.previewBg})">
      <div class="closex" onclick="libPreviewClose()">✕</div>
      <div class="body bgbody">
-       <div class="epnum">Серия ${epNum}/${total>1?total:'X'} (Сезон 1)</div>
+       <div class="epnum">Серия ${epNum} из ${total}, Сезон ${seasonNum}</div>
        ${genres.length?`<div class="genres">${genres.map(g=>`<span>${esc(g)}</span>`).join('')}</div>`:''}
        <div class="desc">${esc(s.desc||'')}</div>
        ${playBtns}
@@ -584,7 +598,7 @@ function libPreviewCard(s){
    <div class="libpv" onclick="event.stopPropagation()">
      <div class="cover" style="background-image:url(${s.cover||''})"><div class="closex" onclick="libPreviewClose()">✕</div></div>
      <div class="body">
-       <div class="epnum">Серия ${epNum}/${total>1?total:'X'} (Сезон 1)</div>
+       <div class="epnum">Серия ${epNum} из ${total}, Сезон ${seasonNum}</div>
        ${genres.length?`<div class="genres">${genres.map(g=>`<span>${esc(g)}</span>`).join('')}</div>`:''}
        <div class="desc">${esc(s.desc||'')}</div>
        ${playBtns}
@@ -663,8 +677,8 @@ function renderStory(){
  h+=`<div class="vnback" onclick="event.stopPropagation();libOpen()">‹</div>`;
  h+=`<div class="vnicons">
    <div class="vnicon" onclick="event.stopPropagation();libOpen()" title="В галерею">🏠</div>
-   <div class="vnicon" onclick="event.stopPropagation();openSettings()" title="Настройки">⚙️</div>
    <div class="vnicon" onclick="event.stopPropagation();openWardrobe()" title="Внешность">👗</div>
+   <div class="vnicon" onclick="event.stopPropagation();openSettings()" title="Настройки">⚙️</div>
  </div>`;
  if(overlay)h+=overlayHTML();
  if(!bgUrl&&n.illo)h+=`<div class="vnnote">арт: ${esc(n.illo)}</div>`;
@@ -928,11 +942,14 @@ function admOneSeason(){
   <div class="field" style="margin-top:10px"><input id="ns_ep" placeholder="Название серии (Серия 1. Знакомство)"></div>
   <button class="btn" onclick="addEp()">+ Добавить серию</button>
   <div class="field" style="margin-top:20px"><label>Дата выхода следующей серии (если её ещё нет — покажется игроку вместо «Продолжить»)</label>
-   <input id="e_nextdate" value="${esc(se.nextDate||'')}" placeholder="напр. 20 августа" onchange="saveSeasonDate()"></div>`;
+   <input id="e_nextdate" value="${esc(se.nextDate||'')}" placeholder="напр. 20 августа" onchange="saveSeasonDate()"></div>
+  <div class="field" style="margin-top:10px"><label>Сколько всего серий в сезоне (для «Серия 1 из …» игроку — можно указать заранее, даже если серии ещё не готовы)</label>
+   <input id="e_totalep" type="number" min="1" value="${se.totalEpisodes||''}" placeholder="напр. 10" onchange="saveSeasonTotal()"></div>`;
 }
 window.goStoryBack=()=>{nav.se=null;renderAdmin()};
 window.addEp=()=>{const t=v('ns_ep')||('Серия '+(nSeason().episodes.length+1));nSeason().episodes.push({id:'e'+(DB.nep++),title:t,start:null,scenes:[]});save();renderAdmin()};
 window.saveSeasonDate=()=>{nSeason().nextDate=v('e_nextdate');save()};
+window.saveSeasonTotal=()=>{const n=parseInt(v('e_totalep'));nSeason().totalEpisodes=n>0?n:null;save()};
 window.goEp=id=>{nav.ep=id;nav.sc=null;renderAdmin()};
 window.rmEp=id=>{if(confirm('Удалить серию?')){const se=nSeason();se.episodes=se.episodes.filter(x=>x.id!==id);save();renderAdmin()}};
 
