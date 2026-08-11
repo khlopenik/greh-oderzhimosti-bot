@@ -13,7 +13,7 @@
   // показывает его через кнопку меню, не перезагружая страницу) — поэтому одной
   // проверки версии при загрузке недостаточно: перепроверяем при каждом возврате
   // видимости/фокуса и вдобавок раз в 20 секунд, пока апп открыт.
-  var APP_VERSION='2026-08-10-10';
+  var APP_VERSION='2026-08-10-11';
   var checking=false;
   function checkVersion(){
     if(checking)return;
@@ -347,14 +347,33 @@ async function loadDB(){
  DB.stories=out;
 }
 
+/* защита от потери данных: если в памяти браузера коллекция пустая (недогрузилась/сбой сети),
+   а в базе по ней есть записи — не даём save() их стереть, пропускаем именно эту коллекцию */
+async function remoteHasRows(table,col,val){
+ const {count}=await sb.from(table).select('id',{count:'exact',head:true}).eq(col,val);
+ return (count||0)>0;
+}
 async function save(){
  try{
+  const blocked=[];
   for(const s of DB.stories){
    await sb.from('gr_stories').upsert({id:s.id,title:s.title,genre:s.genre,cover_url:s.cover,preview_bg_url:s.previewBg||null,description:s.desc,gg_name:s.gg.name,gg_desc:s.gg.desc});
-   await sb.from('gr_locations').delete().eq('story_id',s.id);
-   if(s.locations.length)await sb.from('gr_locations').insert(s.locations.map(l=>({id:l.id,story_id:s.id,name:l.name,bg_url:l.bg})));
-   await sb.from('gr_cast').delete().eq('story_id',s.id);
-   if(s.cast.length)await sb.from('gr_cast').insert(s.cast.map(c=>({id:c.id,story_id:s.id,name:c.name,img_url:c.img,pos:c.pos||'right'})));
+
+   if(s.locations.length||!(await remoteHasRows('gr_locations','story_id',s.id))){
+    await sb.from('gr_locations').delete().eq('story_id',s.id);
+    if(s.locations.length)await sb.from('gr_locations').insert(s.locations.map(l=>({id:l.id,story_id:s.id,name:l.name,bg_url:l.bg})));
+   } else blocked.push('локации');
+
+   if(s.cast.length||!(await remoteHasRows('gr_cast','story_id',s.id))){
+    await sb.from('gr_cast').delete().eq('story_id',s.id);
+    if(s.cast.length)await sb.from('gr_cast').insert(s.cast.map(c=>({id:c.id,story_id:s.id,name:c.name,img_url:c.img,pos:c.pos||'right'})));
+   } else blocked.push('герои');
+
+   if(!s.seasons.length&&await remoteHasRows('gr_seasons','story_id',s.id)){
+    blocked.push('сезоны/серии/сцены');
+    if(blocked.length)alert('Не сохранено: '+blocked.join(', ')+' — в браузере эти данные сейчас пустые, хотя в базе есть записи (похоже, не догрузилось). Обнови страницу и попробуй снова, чтобы не потерять то, что уже есть.');
+    continue;
+   }
 
    const {data:oldSeasons}=await sb.from('gr_seasons').select('id').eq('story_id',s.id);
    const keepSe=s.seasons.map(se=>se.id);
@@ -363,6 +382,10 @@ async function save(){
    for(const [si,se] of s.seasons.entries()){
     await sb.from('gr_seasons').upsert({id:se.id,story_id:s.id,title:se.title,next_date:se.nextDate||null,ord:si});
 
+    if(!se.episodes.length&&await remoteHasRows('gr_episodes','season_id',se.id)){
+     blocked.push('серии сезона «'+se.title+'»');
+     continue;
+    }
     const {data:oldEps}=await sb.from('gr_episodes').select('id').eq('season_id',se.id);
     const keepEp=se.episodes.map(ep=>ep.id);
     for(const oe of (oldEps||[]))if(!keepEp.includes(oe.id))await sb.from('gr_episodes').delete().eq('id',oe.id);
@@ -370,6 +393,10 @@ async function save(){
     for(const [ei,ep] of se.episodes.entries()){
      await sb.from('gr_episodes').upsert({id:ep.id,season_id:se.id,title:ep.title,start_scene:ep.start,ord:ei});
 
+     if(!ep.scenes.length&&await remoteHasRows('gr_scenes','episode_id',ep.id)){
+      blocked.push('сцены серии «'+ep.title+'»');
+      continue;
+     }
      const {data:oldScenes}=await sb.from('gr_scenes').select('id').eq('episode_id',ep.id);
      const keepSc=ep.scenes.map(sc=>sc.id);
      for(const osc of (oldScenes||[]))if(!keepSc.includes(osc.id))await sb.from('gr_scenes').delete().eq('id',osc.id);
@@ -384,6 +411,7 @@ async function save(){
      }
     }
    }
+   if(blocked.length)alert('Не сохранено: '+blocked.join(', ')+' — в браузере эти данные сейчас пустые, хотя в базе есть записи (похоже, не догрузилось). Обнови страницу и попробуй снова, чтобы не потерять то, что уже есть.');
   }
  }catch(e){console.error('save->supabase failed',e);alert('Не удалось сохранить в облако: '+(e&&e.message||e))}
 }
