@@ -13,7 +13,7 @@
   // показывает его через кнопку меню, не перезагружая страницу) — поэтому одной
   // проверки версии при загрузке недостаточно: перепроверяем при каждом возврате
   // видимости/фокуса и вдобавок раз в 20 секунд, пока апп открыт.
-  var APP_VERSION='2026-08-10-09';
+  var APP_VERSION='2026-08-10-10';
   var checking=false;
   function checkVersion(){
     if(checking)return;
@@ -88,6 +88,9 @@
   .opt{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px 14px;font-size:14px;margin-bottom:10px;cursor:pointer}
   .match{text-align:center;padding:20px 6px}.match .ava{width:90px;height:90px;font-size:36px;margin:0 auto 14px}
   .field{margin-bottom:12px}
+  .dropzone{border:2px dashed var(--line);border-radius:12px;padding:8px;transition:background .15s,border-color .15s}
+  .dropzone.dragover{background:var(--pink-soft);border-color:var(--pink)}
+  .dropzone-hint{font-size:11px;color:var(--muted);margin-top:4px;text-align:center}
   .chk{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
   .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
   .field input,.field textarea,.field select{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;font-family:inherit;outline:none;background:#fff}
@@ -394,6 +397,18 @@ async function uploadImg(inp,cb){
  const {data}=sb.storage.from('gr-media').getPublicUrl(path);
  cb(data.publicUrl);
 }
+/* drag-n-drop поверх обычных input[type=file] в админке — перетащи файл прямо на поле */
+window.onDropZone=ev=>{
+ ev.preventDefault();
+ const zone=ev.currentTarget;
+ zone.classList.remove('dragover');
+ const dt=ev.dataTransfer;
+ if(!dt||!dt.files||!dt.files.length)return;
+ const inp=zone.querySelector('input[type=file]');
+ if(!inp)return;
+ inp.files=dt.files;
+ inp.dispatchEvent(new Event('change',{bubbles:true}));
+};
 
 /* ---------- каркас ---------- */
 const screen=document.getElementById('screen');
@@ -731,10 +746,10 @@ function locsBlock(s){
  return `<div style="font-size:13px;color:var(--muted);margin:20px 0 10px">Локации (${s.locations.length}) — фоны, которые переиспользуешь в сценах</div>
   ${s.locations.map(l=>`<div class="row">${l.bg?(isVideoUrl(l.bg)?`<video src="${l.bg}" muted style="width:46px;height:46px;object-fit:cover;border-radius:8px"></video>`:`<img src="${l.bg}" style="width:46px;height:46px;object-fit:cover;border-radius:8px">`):'<div style="width:46px;height:46px;border-radius:8px;background:var(--purple-soft)"></div>'}
     <div class="rt"><div>${esc(l.name)}</div><div class="m">${l.bg?'фон загружен':'нет фона'}</div></div>
-    <label class="btn sm ghost" style="cursor:pointer">Фон<input type="file" accept="image/*,video/*" style="display:none" onchange="upLoc(this,'${l.id}')"></label>
+    <label class="btn sm ghost dropzone" style="cursor:pointer;display:inline-block" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="onDropZone(event)">Фон<input type="file" accept="image/*,video/*" style="display:none" onchange="upLoc(this,'${l.id}')"></label>
     <span class="del" onclick="rmLoc('${l.id}')">✕</span></div>`).join('')}
   <div class="field" style="margin-top:8px"><input id="ns_loc" placeholder="Название локации (Бар ночью)"></div>
-  <div class="field"><label>Фото или видео локации (можно сразу, можно потом)</label><input type="file" id="ns_locfile" accept="image/*,video/*"></div>
+  <div class="field dropzone" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="onDropZone(event)"><label>Фото или видео локации (можно сразу, можно потом)</label><input type="file" id="ns_locfile" accept="image/*,video/*"><div class="dropzone-hint">или перетащи файл сюда</div></div>
   <button class="btn ghost" onclick="addLoc()">+ Добавить локацию</button>`;
 }
 function castBlock(s){
@@ -748,10 +763,10 @@ function castBlock(s){
      <option value="center" ${c.pos==='center'?'selected':''}>Центр</option>
      <option value="none" ${c.pos==='none'?'selected':''}>Без портрета</option>
     </select>
-    <label class="btn sm ghost" style="cursor:pointer">Портрет<input type="file" accept="image/*" style="display:none" onchange="upCast(this,'${c.id}')"></label>
+    <label class="btn sm ghost dropzone" style="cursor:pointer;display:inline-block" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="onDropZone(event)">Портрет<input type="file" accept="image/*" style="display:none" onchange="upCast(this,'${c.id}')"></label>
     <span class="del" onclick="rmCast('${c.id}')">✕</span></div>`).join('')}
   <div class="field" style="margin-top:8px"><input id="ns_cast" placeholder="Имя персонажа (Итан) — как в поле «Кто говорит»"></div>
-  <div class="field"><label>Портрет (можно сразу, можно потом)</label><input type="file" id="ns_castfile" accept="image/*"></div>
+  <div class="field dropzone" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="onDropZone(event)"><label>Портрет (можно сразу, можно потом)</label><input type="file" id="ns_castfile" accept="image/*"><div class="dropzone-hint">или перетащи файл сюда</div></div>
   <button class="btn ghost" onclick="addCast()">+ Добавить персонажа</button>`;
 }
 let quickPanel=null;
@@ -778,9 +793,9 @@ function admOneStory(){
  return `<div class="crumb"><b>${esc(s.title)}</b></div>
   <button class="btn sm ghost" onclick="goStories()">‹ К галерее</button>
   ${s.cover?`<img class="thumb" src="${s.cover}" style="margin-top:12px">`:''}
-  <div class="field" style="margin-top:12px"><label>Обложка истории (карточка в галерее)</label><input type="file" accept="image/*" onchange="upCover(this)"></div>
+  <div class="field dropzone" style="margin-top:12px" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="onDropZone(event)"><label>Обложка истории (карточка в галерее)</label><input type="file" accept="image/*" onchange="upCover(this)"><div class="dropzone-hint">или перетащи файл сюда</div></div>
   ${s.previewBg?`<img class="thumb" src="${s.previewBg}" style="margin-top:12px">`:''}
-  <div class="field"><label>Фон попапа-превью (с надписью сверху и пустым местом под текст снизу)</label><input type="file" accept="image/*" onchange="upPreviewBg(this)"></div>
+  <div class="field dropzone" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="onDropZone(event)"><label>Фон попапа-превью (с надписью сверху и пустым местом под текст снизу)</label><input type="file" accept="image/*" onchange="upPreviewBg(this)"><div class="dropzone-hint">или перетащи файл сюда</div></div>
   <div class="field"><label>Название</label><input id="e_t" value="${esc(s.title)}"></div>
   <div class="field"><label>Жанр</label><input id="e_g" value="${esc(s.genre)}"></div>
   <div class="field"><label>О чём история</label><textarea id="e_d">${esc(s.desc||'')}</textarea></div>
@@ -905,7 +920,7 @@ function admScene(){
   ${quickBar()}
   ${sc.bg?(isVideoUrl(sc.bg)?`<video class="thumb" src="${sc.bg}" muted style="margin-top:12px"></video>`:`<img class="thumb" src="${sc.bg}" style="margin-top:12px">`):''}
   <div class="field" style="margin-top:12px"><label>Локация (фон из библиотеки истории)</label><select id="e_loc"><option value="">— без локации —</option>${(nStory().locations||[]).map(l=>`<option value="${l.id}" ${sc.loc===l.id?'selected':''}>${esc(l.name)}</option>`).join('')}</select></div>
-  <div class="field"><label>Или своя картинка/видео сцены (перебивает локацию)</label><input type="file" accept="image/*,video/*" onchange="upBg(this)">${sc.bg?'<div class="del" onclick="clrBg()" style="margin-top:6px">убрать картинку/видео</div>':''}</div>
+  <div class="field dropzone" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="onDropZone(event)"><label>Или своя картинка/видео сцены (перебивает локацию)</label><input type="file" accept="image/*,video/*" onchange="upBg(this)"><div class="dropzone-hint">или перетащи файл сюда</div>${sc.bg?'<div class="del" onclick="clrBg()" style="margin-top:6px">убрать картинку/видео</div>':''}</div>
   <div class="field"><label>Описание арта (если фона нет)</label><input id="e_illo" value="${esc(sc.illo)}" placeholder="дождь, бар, взгляд альфы"></div>
   <div class="field"><label>Кто говорит (пусто = от автора)</label><input id="e_sp" value="${esc(sc.speaker)}" placeholder="Рэн / ??? / (пусто)"></div>
   <div class="field"><label>Портрет говорящего в этой сцене</label>
