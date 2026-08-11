@@ -13,7 +13,7 @@
   // показывает его через кнопку меню, не перезагружая страницу) — поэтому одной
   // проверки версии при загрузке недостаточно: перепроверяем при каждом возврате
   // видимости/фокуса и вдобавок раз в 20 секунд, пока апп открыт.
-  var APP_VERSION='2026-08-10-12';
+  var APP_VERSION='2026-08-11-01';
   var checking=false;
   function checkVersion(){
     if(checking)return;
@@ -636,11 +636,14 @@ function renderStory(){
  const idx=ep.scenes.findIndex(x=>x.id===n.id);
  const nextScene=ep.scenes[idx+1];
  const autoNext=choices.length===0&&nextScene;
- const tapThrough = (choices.length===1 && choices[0].t==='Далее') || autoNext;
+ const bgIsVideo=bgUrl&&isVideoUrl(bgUrl);
+ /* видео нельзя пропустить тапом — досматриваем целиком, переход только когда оно закончится само */
+ const tapThrough = !bgIsVideo && ((choices.length===1 && choices[0].t==='Далее') || autoNext);
  const tapTarget = choices.length===1 ? choices[0].go : (autoNext ? nextScene.id : null);
+ const videoWillAdvance = bgIsVideo && (tapTarget||autoNext);
 
  let h=`<div class="vn${bgUrl?' hasbg':''}"${tapThrough?` onclick="goNode('${tapTarget}')"`:''}>`;
- if(bgUrl&&isVideoUrl(bgUrl))h+=`<video class="vnbg" src="${bgUrl}" autoplay loop muted playsinline></video>`;
+ if(bgIsVideo)h+=`<video class="vnbg" src="${bgUrl}" autoplay muted playsinline${videoWillAdvance?` onended="goNode('${tapTarget}')"`:''}></video>`;
  else if(bgUrl)h+=`<div class="vnbg" style="background-image:url(${bgUrl})"></div>`;
  h+=`<div class="vnback" onclick="event.stopPropagation();libOpen()">‹</div>`;
  h+=`<div class="vnicons">
@@ -663,7 +666,9 @@ function renderStory(){
    h+=`</div></div>`;
  }
 
- if(tapThrough){
+ if(videoWillAdvance){
+   /* видео само доиграет и вызовет onended — никакого UI поверх не показываем */
+ } else if(tapThrough){
    h+=`<div class="vntap">тронь экран, чтобы продолжить ›</div>`;
  } else if(!choices.length){
    h+=episodeEndHTML(st,ep);
