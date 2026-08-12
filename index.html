@@ -13,7 +13,7 @@
   // показывает его через кнопку меню, не перезагружая страницу) — поэтому одной
   // проверки версии при загрузке недостаточно: перепроверяем при каждом возврате
   // видимости/фокуса и вдобавок раз в 20 секунд, пока апп открыт.
-  var APP_VERSION='2026-08-11-08';
+  var APP_VERSION='2026-08-11-09';
   var checking=false;
   window.__pendingVersion=null;
   function isMidStory(){
@@ -376,6 +376,29 @@ async function loadDB(){
   });
  }
  DB.stories=out;
+ // счётчики новых id всегда пересчитываем из того, что реально загрузилось из базы —
+ // иначе после обновления страницы счётчик стартует заново с 1 и новый персонаж/локация
+ // получает id, который уже занят существующей записью (см. инцидент с пропажей героев)
+ const maxIdNum=(ids,prefix)=>(ids||[]).reduce((m,id)=>{
+  const s=String(id);
+  if(prefix&&!s.startsWith(prefix))return m;
+  const n=parseInt(prefix?s.slice(prefix.length):s,10);
+  return (!isNaN(n)&&n>m)?n:m;
+ },0);
+ let mStory=0,mCast=0,mLoc=0,mSe=0,mEp=0,mSc=0;
+ out.forEach(s=>{
+  mStory=Math.max(mStory,Number(s.id)||0);
+  mCast=Math.max(mCast,maxIdNum(s.cast.map(c=>c.id),'c'));
+  mLoc=Math.max(mLoc,maxIdNum(s.locations.map(l=>l.id),'l'));
+  s.seasons.forEach(se=>{
+   mSe=Math.max(mSe,maxIdNum([se.id],'se'));
+   se.episodes.forEach(ep=>{
+    mEp=Math.max(mEp,maxIdNum([ep.id],'e'));
+    mSc=Math.max(mSc,maxIdNum(ep.scenes.map(sc=>sc.id),'s'));
+   });
+  });
+ });
+ DB.ns=mStory+1;DB.ncast=mCast+1;DB.nloc=mLoc+1;DB.nse=mSe+1;DB.nep=mEp+1;DB.nsc=mSc+1;
 }
 
 /* защита от потери данных: если в памяти браузера коллекция пустая (недогрузилась/сбой сети),
@@ -384,20 +407,27 @@ async function remoteHasRows(table,col,val){
  const {count}=await sb.from(table).select('id',{count:'exact',head:true}).eq(col,val);
  return (count||0)>0;
 }
+/* любая мутация проверяется на ошибку — раньше insert() мог тихо провалиться
+   (например из-за задвоенного id) и код молча шёл дальше, как будто всё сохранилось,
+   а на деле после предшествующего delete() коллекция оставалась пустой */
+async function chk(promise,what){
+ const {error}=await promise;
+ if(error)throw new Error(what+': '+error.message);
+}
 async function save(){
  try{
   const blocked=[];
   for(const s of DB.stories){
-   await sb.from('gr_stories').upsert({id:s.id,title:s.title,genre:s.genre,cover_url:s.cover,preview_bg_url:s.previewBg||null,description:s.desc,gg_name:s.gg.name,gg_desc:s.gg.desc});
+   await chk(sb.from('gr_stories').upsert({id:s.id,title:s.title,genre:s.genre,cover_url:s.cover,preview_bg_url:s.previewBg||null,description:s.desc,gg_name:s.gg.name,gg_desc:s.gg.desc}),'история');
 
    if(s.locations.length||!(await remoteHasRows('gr_locations','story_id',s.id))){
-    await sb.from('gr_locations').delete().eq('story_id',s.id);
-    if(s.locations.length)await sb.from('gr_locations').insert(s.locations.map(l=>({id:l.id,story_id:s.id,name:l.name,bg_url:l.bg})));
+    await chk(sb.from('gr_locations').delete().eq('story_id',s.id),'локации (удаление)');
+    if(s.locations.length)await chk(sb.from('gr_locations').insert(s.locations.map(l=>({id:l.id,story_id:s.id,name:l.name,bg_url:l.bg}))),'локации');
    } else blocked.push('локации');
 
    if(s.cast.length||!(await remoteHasRows('gr_cast','story_id',s.id))){
-    await sb.from('gr_cast').delete().eq('story_id',s.id);
-    if(s.cast.length)await sb.from('gr_cast').insert(s.cast.map(c=>({id:c.id,story_id:s.id,name:c.name,img_url:c.img,pos:c.pos||'right'})));
+    await chk(sb.from('gr_cast').delete().eq('story_id',s.id),'герои (удаление)');
+    if(s.cast.length)await chk(sb.from('gr_cast').insert(s.cast.map(c=>({id:c.id,story_id:s.id,name:c.name,img_url:c.img,pos:c.pos||'right'}))),'герои');
    } else blocked.push('герои');
 
    if(!s.seasons.length&&await remoteHasRows('gr_seasons','story_id',s.id)){
@@ -408,10 +438,10 @@ async function save(){
 
    const {data:oldSeasons}=await sb.from('gr_seasons').select('id').eq('story_id',s.id);
    const keepSe=s.seasons.map(se=>se.id);
-   for(const os of (oldSeasons||[]))if(!keepSe.includes(os.id))await sb.from('gr_seasons').delete().eq('id',os.id);
+   for(const os of (oldSeasons||[]))if(!keepSe.includes(os.id))await chk(sb.from('gr_seasons').delete().eq('id',os.id),'сезоны (удаление)');
 
    for(const [si,se] of s.seasons.entries()){
-    await sb.from('gr_seasons').upsert({id:se.id,story_id:s.id,title:se.title,next_date:se.nextDate||null,total_episodes:se.totalEpisodes||null,ord:si});
+    await chk(sb.from('gr_seasons').upsert({id:se.id,story_id:s.id,title:se.title,next_date:se.nextDate||null,total_episodes:se.totalEpisodes||null,ord:si}),'сезон «'+se.title+'»');
 
     if(!se.episodes.length&&await remoteHasRows('gr_episodes','season_id',se.id)){
      blocked.push('серии сезона «'+se.title+'»');
@@ -419,10 +449,10 @@ async function save(){
     }
     const {data:oldEps}=await sb.from('gr_episodes').select('id').eq('season_id',se.id);
     const keepEp=se.episodes.map(ep=>ep.id);
-    for(const oe of (oldEps||[]))if(!keepEp.includes(oe.id))await sb.from('gr_episodes').delete().eq('id',oe.id);
+    for(const oe of (oldEps||[]))if(!keepEp.includes(oe.id))await chk(sb.from('gr_episodes').delete().eq('id',oe.id),'серии (удаление)');
 
     for(const [ei,ep] of se.episodes.entries()){
-     await sb.from('gr_episodes').upsert({id:ep.id,season_id:se.id,title:ep.title,start_scene:ep.start,ord:ei});
+     await chk(sb.from('gr_episodes').upsert({id:ep.id,season_id:se.id,title:ep.title,start_scene:ep.start,ord:ei}),'серия «'+ep.title+'»');
 
      if(!ep.scenes.length&&await remoteHasRows('gr_scenes','episode_id',ep.id)){
       blocked.push('сцены серии «'+ep.title+'»');
@@ -430,21 +460,21 @@ async function save(){
      }
      const {data:oldScenes}=await sb.from('gr_scenes').select('id').eq('episode_id',ep.id);
      const keepSc=ep.scenes.map(sc=>sc.id);
-     for(const osc of (oldScenes||[]))if(!keepSc.includes(osc.id))await sb.from('gr_scenes').delete().eq('id',osc.id);
+     for(const osc of (oldScenes||[]))if(!keepSc.includes(osc.id))await chk(sb.from('gr_scenes').delete().eq('id',osc.id),'сцены (удаление)');
 
      if(ep.scenes.length){
-      await sb.from('gr_scenes').upsert(ep.scenes.map((sc,i)=>({id:sc.id,episode_id:ep.id,speaker:sc.speaker||null,illo:sc.illo||null,bg_url:sc.bg||null,loc_id:sc.loc||null,scene_text:sc.text,endnote:sc.endnote||null,char_pos:sc.charPos||null,plain_text:sc.plainText||false,ord:i})));
+      await chk(sb.from('gr_scenes').upsert(ep.scenes.map((sc,i)=>({id:sc.id,episode_id:ep.id,speaker:sc.speaker||null,illo:sc.illo||null,bg_url:sc.bg||null,loc_id:sc.loc||null,scene_text:sc.text,endnote:sc.endnote||null,char_pos:sc.charPos||null,plain_text:sc.plainText||false,ord:i}))),'сцены серии «'+ep.title+'»');
       const sceneIds=ep.scenes.map(sc=>sc.id);
-      await sb.from('gr_choices').delete().in('scene_id',sceneIds);
+      await chk(sb.from('gr_choices').delete().in('scene_id',sceneIds),'выборы (удаление)');
       const choiceRows=[];
       ep.scenes.forEach(sc=>(sc.choices||[]).forEach((c,i)=>choiceRows.push({scene_id:sc.id,txt:c.t,go:c.go,ctype:c.type||'free',cost:c.cost||null,img_url:c.img||null,ord:i})));
-      if(choiceRows.length)await sb.from('gr_choices').insert(choiceRows);
+      if(choiceRows.length)await chk(sb.from('gr_choices').insert(choiceRows),'выборы серии «'+ep.title+'»');
      }
     }
    }
    if(blocked.length)alert('Не сохранено: '+blocked.join(', ')+' — в браузере эти данные сейчас пустые, хотя в базе есть записи (похоже, не догрузилось). Обнови страницу и попробуй снова, чтобы не потерять то, что уже есть.');
   }
- }catch(e){console.error('save->supabase failed',e);alert('Не удалось сохранить в облако: '+(e&&e.message||e))}
+ }catch(e){console.error('save->supabase failed',e);alert('Не удалось сохранить в облако — часть данных могла НЕ сохраниться: '+(e&&e.message||e)+'\n\nОбнови страницу и проверь, что всё на месте, прежде чем продолжать редактировать.')}
 }
 
 /* картинка сразу загружается в Supabase Storage, возвращается публичная ссылка */
