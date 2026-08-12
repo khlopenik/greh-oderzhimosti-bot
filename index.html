@@ -13,7 +13,7 @@
   // показывает его через кнопку меню, не перезагружая страницу) — поэтому одной
   // проверки версии при загрузке недостаточно: перепроверяем при каждом возврате
   // видимости/фокуса и вдобавок раз в 20 секунд, пока апп открыт.
-  var APP_VERSION='2026-08-11-07';
+  var APP_VERSION='2026-08-11-08';
   var checking=false;
   window.__pendingVersion=null;
   function isMidStory(){
@@ -206,6 +206,8 @@
     clip-path:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px)}
   .vntext{color:#fff;font-size:16px;line-height:1.5}
   .vnend{color:#ffd9a8;font-size:12.5px;font-style:italic;margin-top:10px}
+  .vnplain{padding:0 10px 4px;text-align:center}
+  .vnplain-text{color:#fff;font-size:17px;line-height:1.55;font-style:italic;text-shadow:0 2px 10px rgba(0,0,0,.85),0 0 20px rgba(0,0,0,.5)}
   .vnchoice{padding:2px;background:linear-gradient(120deg,#7a2350,#a8483f);cursor:pointer;
     clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px);
     filter:drop-shadow(0 0 5px rgba(120,20,40,.4))}
@@ -359,7 +361,7 @@ async function loadDB(){
      (choices||[]).forEach(c=>{(choicesByScene[c.scene_id]=choicesByScene[c.scene_id]||[]).push({t:c.txt,go:c.go,type:c.ctype,cost:c.cost,img:c.img_url})});
     }
     episodesOut.push({id:ep.id,title:ep.title,start:ep.start_scene,scenes:(scenes||[]).map(sc=>({
-     id:sc.id,speaker:sc.speaker,illo:sc.illo,bg:sc.bg_url,loc:sc.loc_id,text:sc.scene_text,endnote:sc.endnote,charPos:sc.char_pos||'',
+     id:sc.id,speaker:sc.speaker,illo:sc.illo,bg:sc.bg_url,loc:sc.loc_id,text:sc.scene_text,endnote:sc.endnote,charPos:sc.char_pos||'',plainText:!!sc.plain_text,
      choices:choicesByScene[sc.id]||[],
     }))});
    }
@@ -431,7 +433,7 @@ async function save(){
      for(const osc of (oldScenes||[]))if(!keepSc.includes(osc.id))await sb.from('gr_scenes').delete().eq('id',osc.id);
 
      if(ep.scenes.length){
-      await sb.from('gr_scenes').upsert(ep.scenes.map((sc,i)=>({id:sc.id,episode_id:ep.id,speaker:sc.speaker||null,illo:sc.illo||null,bg_url:sc.bg||null,loc_id:sc.loc||null,scene_text:sc.text,endnote:sc.endnote||null,char_pos:sc.charPos||null,ord:i})));
+      await sb.from('gr_scenes').upsert(ep.scenes.map((sc,i)=>({id:sc.id,episode_id:ep.id,speaker:sc.speaker||null,illo:sc.illo||null,bg_url:sc.bg||null,loc_id:sc.loc||null,scene_text:sc.text,endnote:sc.endnote||null,char_pos:sc.charPos||null,plain_text:sc.plainText||false,ord:i})));
       const sceneIds=ep.scenes.map(sc=>sc.id);
       await sb.from('gr_choices').delete().in('scene_id',sceneIds);
       const choiceRows=[];
@@ -695,7 +697,9 @@ function renderStory(){
  h+=`<div class="vnfade"></div>`;
 
  h+=`<div class="vnui">`;
- if(n.text||n.speaker||n.endnote){
+ if(n.plainText&&(n.text||n.endnote)){
+   h+=`<div class="vnplain"><div class="vnplain-text">${esc(n.text)}</div>${n.endnote?`<div class="vnend">${esc(n.endnote)}</div>`:''}</div>`;
+ } else if(n.text||n.speaker||n.endnote){
    h+=`<div class="vntab"><span>${n.speaker?esc(n.speaker):'…'}</span></div>`;
    h+=`<div class="vnbox"><div class="in"><div class="vntext">${esc(n.text)}</div>`;
    if(n.endnote)h+=`<div class="vnend">${esc(n.endnote)}</div>`;
@@ -848,7 +852,7 @@ function castBlock(s){
  const posLabel={left:'Слева',right:'Справа',center:'По центру',none:'Без портрета'};
  return `<div style="font-size:13px;color:var(--muted);margin:20px 0 10px">Действующие лица (${s.cast.length}) — портреты на прозрачном фоне, показываются поверх фона сцены, когда имя в поле «Кто говорит» совпадает с именем здесь. «По умолчанию» ниже — где стоит персонаж, если в самой сцене не выбрано иначе (в сцене можно переопределить)</div>
   ${s.cast.map(c=>`<div class="row">${c.img?`<img src="${c.img}" style="width:46px;height:46px;object-fit:cover;border-radius:8px">`:'<div style="width:46px;height:46px;border-radius:8px;background:var(--purple-soft)"></div>'}
-    <div class="rt"><div>${esc(c.name)}</div><div class="m">По умолчанию: ${posLabel[c.pos||'right']}</div></div>
+    <div class="rt"><input value="${esc(c.name)}" onchange="renameCast('${c.id}',this.value)" style="font-size:15px;border:1px solid transparent;border-radius:6px;padding:2px 4px;width:100%;background:transparent" onfocus="this.style.border='1px solid var(--line)';this.style.background='#fff'" onblur="this.style.border='1px solid transparent';this.style.background='transparent'"><div class="m">По умолчанию: ${posLabel[c.pos||'right']}</div></div>
     <select onchange="setCastPos('${c.id}',this.value)" style="border-radius:8px;border:1px solid var(--line);padding:6px">
      <option value="left" ${(c.pos||'right')==='left'?'selected':''}>Слева</option>
      <option value="right" ${(c.pos||'right')==='right'?'selected':''}>Справа</option>
@@ -931,6 +935,18 @@ window.addCast=()=>{
 window.upCast=(inp,id)=>uploadImg(inp,url=>{const c=nStory().cast.find(x=>x.id===id);if(c){c.img=url;save();renderAdmin()}});
 window.rmCast=id=>{const s=nStory();s.cast=s.cast.filter(x=>x.id!==id);save();renderAdmin()};
 window.setCastPos=(id,pos)=>{const s=nStory();const c=s.cast.find(x=>x.id===id);if(c)c.pos=pos;save();renderAdmin()};
+window.renameCast=(id,newName)=>{
+ const s=nStory();const c=s.cast.find(x=>x.id===id);if(!c)return;
+ newName=newName.trim();
+ if(!newName||newName===c.name){renderAdmin();return}
+ const oldName=c.name;c.name=newName;
+ // у сцен персонаж привязан по имени в поле "Кто говорит" — переименовываем и там,
+ // иначе портрет молча отвяжется от старых сцен
+ (s.seasons||[]).forEach(se=>(se.episodes||[]).forEach(ep=>(ep.scenes||[]).forEach(sc=>{
+  if(sc.speaker===oldName)sc.speaker=newName;
+ })));
+ save();renderAdmin();
+};
 window.addSeason=()=>{const t=v('ns_se')||('Сезон '+(nStory().seasons.length+1));nStory().seasons.push({id:'se'+(DB.nse++),title:t,episodes:[]});save();renderAdmin()};
 window.goSeason=id=>{nav.se=id;nav.ep=null;renderAdmin()};
 window.rmSeason=id=>{if(confirm('Удалить сезон?')){const s=nStory();s.seasons=s.seasons.filter(x=>x.id!==id);save();renderAdmin()}};
@@ -1031,6 +1047,10 @@ function admScene(){
     <option value="none" ${sc.charPos==='none'?'selected':''}>Без портрета (только фон)</option>
    </select></div>
   <div class="field"><label>Текст сцены</label><textarea id="e_txt" placeholder="Что происходит…">${esc(sc.text)}</textarea></div>
+  <div class="field"><label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+    <input type="checkbox" id="e_plain" ${sc.plainText?'checked':''} style="width:auto">
+    Текст без плашки (просто надпись поверх фона, без имени и рамки)
+   </label></div>
   <div class="field"><label>Приписка в конце (напр. «Конец серии»)</label><input id="e_end" value="${esc(sc.endnote||'')}"></div>
   <div class="field"><label>Действия ГГ (выборы)</label>
    <div id="choices">${(sc.choices||[]).map((c,i)=>choiceRow(c,i,opts)).join('')}</div>
@@ -1062,7 +1082,7 @@ window.addChoice=()=>{pullScene();nScene().choices.push({t:'',go:'',type:'free',
 window.rmChoice=i=>{pullScene();nScene().choices.splice(i,1);renderAdmin()};
 function pullScene(){const sc=nScene();
  const g=id=>{const e=document.getElementById(id);return e?e.value:undefined};
- if(g('e_txt')!==undefined){sc.illo=g('e_illo');sc.speaker=g('e_sp');sc.text=g('e_txt');sc.endnote=g('e_end');if(g('e_loc')!==undefined)sc.loc=g('e_loc');const cpEl=document.getElementById('e_charpos');if(cpEl)sc.charPos=cpEl.value}
+ if(g('e_txt')!==undefined){sc.illo=g('e_illo');sc.speaker=g('e_sp');sc.text=g('e_txt');sc.endnote=g('e_end');if(g('e_loc')!==undefined)sc.loc=g('e_loc');const cpEl=document.getElementById('e_charpos');if(cpEl)sc.charPos=cpEl.value;const plEl=document.getElementById('e_plain');if(plEl)sc.plainText=plEl.checked}
  const rows={};document.querySelectorAll('[data-ci]').forEach(el=>{const i=el.dataset.ci;rows[i]=rows[i]||{t:'',go:'',type:'free',cost:''};rows[i][el.dataset.k]=el.value});
  const keys=Object.keys(rows);if(keys.length)sc.choices=keys.sort((a,b)=>a-b).map(k=>rows[k]);
 }
